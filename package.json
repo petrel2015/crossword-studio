@@ -1,0 +1,12 @@
+{
+  "name": "crossword-studio",
+  "version": "1.2.0",
+  "description": "Pure-web crossword generator: word list or article in, newspaper-style puzzle out — solve online, print A4/PDF, share by link.",
+  "private": true,
+  "scripts": {
+    "test": "node test/gen-test.js && node test/extract-test.js && node test/dom-test.js"
+  },
+  "devDependencies": {
+    "jsdom": "^30.0.1"
+  }
+}

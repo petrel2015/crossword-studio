@@ -1,0 +1,242 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Crossword Studio</title>
+<meta name="description" content="Generate newspaper-style English crossword puzzles from your own word list. Solve online, print, export PDF, share by link.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23fff'/%3E%3Cpath d='M11 3h4v6h6v4h-6v6h-4v-6H5V9h6z' fill='%23111'/%3E%3Crect x='21' y='21' width='8' height='8' fill='%23111'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div id="app">
+  <header class="masthead">
+    <div class="mast-rule thick"></div>
+    <div class="mast-inner container">
+      <button id="btnHome" class="mast-title" type="button">Crossword&nbsp;Studio</button>
+      <div class="mast-meta">
+        <span id="mastDate"></span>
+        <span class="mast-sep">·</span>
+        <span id="mastIssue">No. 0000</span>
+        <span class="mast-sep">·</span>
+        <span data-i18n="est">Est. MMXXVI</span>
+      </div>
+      <div class="mast-controls">
+        <div class="lang-switch" role="group" aria-label="Language" data-i18n-aria-label="langAria">
+          <button id="langEn" class="lang-btn active" type="button" lang="en">EN</button>
+          <button id="langZh" class="lang-btn" type="button" lang="zh">中文</button>
+        </div>
+        <button id="btnSettings" class="btn small ghost" type="button" data-i18n="settings">AI Settings</button>
+      </div>
+    </div>
+    <div class="mast-rule"></div>
+  </header>
+
+  <!-- ================= BUILDER ================= -->
+  <main id="viewBuilder" class="container">
+    <section class="hero">
+      <h1><span data-i18n="heroT1">Type words.</span><br><span data-i18n="heroT2">Get a crossword.</span></h1>
+      <p data-i18n="heroP">Enter one word per line — add your own clue after a vertical bar, or let AI write it. The generator weaves every word it can into a newspaper-style grid; anything that will not fit is reported, never dropped.</p>
+    </section>
+
+    <section class="builder-grid">
+      <div class="panel">
+        <div class="panel-head">
+          <h2>
+            <span class="stepno">1</span>
+            <span class="mode-switch" role="tablist" aria-label="Input mode" data-i18n-aria-label="modeAria">
+              <button id="modeWords" class="mode-btn active" type="button" role="tab" aria-selected="true" data-i18n="modeWords">Word list</button>
+              <button id="modeArticle" class="mode-btn" type="button" role="tab" aria-selected="false" data-i18n="modeArticle">Article</button>
+            </span>
+          </h2>
+          <span class="panel-actions" id="wordsActions">
+            <button id="btnSample" class="btn small ghost" type="button" data-i18n="loadSample">Load sample</button>
+            <button id="btnClearWords" class="btn small ghost" type="button" data-i18n="clearWords">Clear</button>
+          </span>
+        </div>
+
+        <div id="wordsPanel">
+          <p class="field-hint"><span data-i18n="wordListHint">One word per line. Optional clue:</span> <code>word | your clue here</code></p>
+          <textarea id="wordInput" spellcheck="false" autocapitalize="off" autocomplete="off" data-i18n-placeholder="wordInputPh"></textarea>
+          <div class="row spread">
+            <span id="wordStats" class="field-hint"></span>
+            <span id="aiStatus" class="field-hint"></span>
+          </div>
+          <ul id="parseIssues" class="issues" hidden></ul>
+        </div>
+
+        <div id="articlePanel" hidden>
+          <p class="field-hint" data-i18n="articleHint">Paste an English article — the candidate words are extracted locally in your browser.</p>
+          <textarea id="articleInput" spellcheck="false" autocapitalize="off" autocomplete="off" data-i18n-placeholder="articlePh"></textarea>
+          <div class="row spread">
+            <span id="articleStats" class="field-hint"></span>
+            <button id="btnExtract" class="btn small" type="button" data-i18n="extractWords">Extract candidate words</button>
+          </div>
+
+          <div id="candidatesWrap" hidden>
+            <div class="cand-head">
+              <span class="field-label"><span data-i18n="pickWords">Pick words</span> · <span id="candSelected"></span></span>
+              <span class="cand-actions">
+                <button id="btnCandTop" class="btn small ghost" type="button" data-i18n="candTop">Top 10</button>
+                <button id="btnCandAll" class="btn small ghost" type="button" data-i18n="candAll">All</button>
+                <button id="btnCandNone" class="btn small ghost" type="button" data-i18n="candNone">None</button>
+              </span>
+            </div>
+            <div id="candidateList" class="cand-list"></div>
+            <div class="cand-add">
+              <input id="addWordInput" type="text" maxlength="12" autocomplete="off" data-i18n-placeholder="addWordPh">
+              <button id="btnAddWord" class="btn small" type="button" data-i18n="addWord">Add</button>
+            </div>
+            <label class="field">
+              <span class="field-label" data-i18n="clueStyleL">Clue style</span>
+              <select id="clueStyle">
+                <option value="auto" selected data-i18n="styleAuto">Auto — AI article-style when configured</option>
+                <option value="cloze" data-i18n="styleCloze">Cloze from the text (offline)</option>
+                <option value="ai" data-i18n="styleAi">AI article-style</option>
+              </select>
+              <p class="field-hint" data-i18n="styleNote">Article-style clues cite scenes and phrasing from the text and mimic its tone. Cloze blanks the word out of its own sentence — fully offline.</p>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head"><h2><span class="stepno">2</span> <span data-i18n="step2">Puzzle settings</span></h2></div>
+        <label class="field">
+          <span class="field-label" data-i18n="titleL">Title</span>
+          <input id="puzzleTitle" type="text" maxlength="72" autocomplete="off" data-i18n-placeholder="titlePh">
+        </label>
+        <label class="field">
+          <span class="field-label" data-i18n="difficultyL">Difficulty</span>
+          <select id="difficulty">
+            <option value="easy" data-i18n="diffEasy">Easy — dense, compact grid</option>
+            <option value="medium" selected data-i18n="diffMedium">Medium — balanced grid</option>
+            <option value="hard" data-i18n="diffHard">Hard — sprawling, sparse grid</option>
+          </select>
+        </label>
+        <label class="check" id="aiFillRow">
+          <input type="checkbox" id="useAi" checked>
+          <span><span data-i18n="aiFill">Write missing clues with AI</span> <em id="aiStatusNote" data-i18n="aiNotConfigured">(not configured)</em></span>
+        </label>
+        <button id="btnGenerate" class="btn primary block" type="button" data-i18n="generate">Generate crossword</button>
+        <p class="field-hint" data-i18n="diffHint">Difficulty shapes the grid (Easy stays small and dense, Hard may sprawl) and, when AI clues are on, their style.</p>
+      </div>
+    </section>
+  </main>
+
+  <!-- ================= SOLVE ================= -->
+  <main id="viewSolve" hidden>
+    <div class="toolbar">
+      <div class="toolbar-inner container">
+        <div class="tb-group" role="group" aria-label="Puzzle">
+          <button id="btnEdit" class="btn small" type="button" data-i18n="edit">Edit</button>
+          <button id="btnRegenerate" class="btn small" type="button" data-i18n="regenerate">Regenerate</button>
+          <button id="btnExit" class="btn small" type="button" data-i18n="exit">Exit</button>
+        </div>
+        <div class="tb-group" role="group" aria-label="Solve tools">
+          <button id="btnCheck" class="btn small" type="button" data-i18n="check">Check</button>
+          <button id="btnHint" class="btn small" type="button" data-i18n="hint">Hint</button>
+          <button id="btnReveal" class="btn small" type="button" data-i18n="reveal">Reveal ▾</button>
+          <button id="btnReset" class="btn small" type="button" data-i18n="reset">Reset</button>
+        </div>
+        <div class="tb-spacer"></div>
+        <div class="tb-group" role="group" aria-label="Share and print">
+          <button id="btnPrint" class="btn small" type="button" data-i18n="printShare">Print / PDF</button>
+          <button id="btnShare" class="btn small" type="button" data-i18n="share">Share</button>
+          <span id="timer" class="timer" title="Elapsed time" data-i18n-title="timerTitle">00:00</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="solve-wrap container">
+      <section class="grid-col">
+        <div class="puzzle-heading">
+          <h2 id="puzzleHeading"></h2>
+          <p id="puzzleMeta" class="field-hint"></p>
+        </div>
+        <div class="grid-frame">
+          <div id="grid" class="grid"></div>
+        </div>
+        <div id="solvedBanner" class="solved-banner" hidden>
+          <span class="solved-word" data-i18n="solvedWord">Solved</span><span id="solvedTime">00:00</span>
+        </div>
+        <section id="unplacedPanel" class="unplaced" hidden>
+          <h3 id="unplacedTitle"></h3>
+          <ul id="unplacedList"></ul>
+          <p class="field-hint" data-i18n="notPlacedHint">These words share no usable letters or every crossing conflicted. Try Regenerate, remove them, or switch difficulty.</p>
+        </section>
+        <p class="grid-help field-hint" data-i18n="gridHelp">Click a cell and type · arrows move · space flips direction · tab next clue</p>
+      </section>
+
+      <section class="clues-col">
+        <h2 class="clues-head" data-i18n="across">Across</h2>
+        <ol id="cluesAcross" class="clues"></ol>
+        <h2 class="clues-head" data-i18n="down">Down</h2>
+        <ol id="cluesDown" class="clues"></ol>
+      </section>
+    </div>
+  </main>
+</div>
+
+<!-- invisible input that captures typing incl. mobile keyboards -->
+<input id="ghostInput" type="text" autocomplete="off" autocorrect="off" autocapitalize="characters"
+       spellcheck="false" aria-hidden="true" tabindex="-1">
+
+<!-- editor drawer -->
+<aside id="drawer" class="drawer" hidden aria-label="Edit puzzle">
+  <div class="drawer-head">
+    <h3 data-i18n="drawerTitle">Edit puzzle</h3>
+    <button id="btnDrawerClose" class="btn small ghost" type="button" data-i18n="close">Close</button>
+  </div>
+  <div class="drawer-body">
+    <label class="field">
+      <span class="field-label" data-i18n="titleL">Title</span>
+      <input id="editTitle" type="text" maxlength="72" autocomplete="off">
+    </label>
+    <label class="field">
+      <span class="field-label"><span data-i18n="difficultyL">Difficulty</span> <em data-i18n="appliesOnRegen">(applies on regenerate)</em></span>
+      <select id="editDifficulty">
+        <option value="easy" data-i18n="diff_easy">Easy</option>
+        <option value="medium" data-i18n="diff_medium">Medium</option>
+        <option value="hard" data-i18n="diff_hard">Hard</option>
+      </select>
+    </label>
+    <div class="field">
+      <span class="field-label" id="editCluesLabel" data-i18n="clues">Clues</span>
+      <div id="editClues" class="edit-clues"></div>
+    </div>
+  </div>
+  <div class="drawer-foot">
+    <button id="btnEditSave" class="btn" type="button" data-i18n="save">Save changes</button>
+    <button id="btnEditRegen" class="btn primary" type="button" data-i18n="saveRegen">Save &amp; regenerate</button>
+  </div>
+</aside>
+<div id="drawerScrim" class="scrim" hidden></div>
+
+<!-- generic modal -->
+<div id="modal" class="modal" hidden>
+  <div class="modal-backdrop" data-close></div>
+  <div class="modal-card" role="dialog" aria-modal="true">
+    <div class="modal-head">
+      <h3 id="modalTitle"></h3>
+      <button class="btn small ghost modal-x" type="button" data-close>✕</button>
+    </div>
+    <div id="modalBody" class="modal-body"></div>
+  </div>
+</div>
+
+<div id="toast" class="toast" hidden></div>
+<div id="printRoot"></div>
+
+<script src="js/generator.js"></script>
+<script src="js/storage.js"></script>
+<script src="js/codec.js"></script>
+<script src="js/ai.js"></script>
+<script src="js/extract.js"></script>
+<script src="js/i18n.js"></script>
+<script src="js/solve.js"></script>
+<script src="js/print.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
