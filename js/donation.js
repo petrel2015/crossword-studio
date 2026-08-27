@@ -123,6 +123,10 @@
     captionEl().textContent = t('qrLoading');
   }
 
+  function renderLibFailed() {
+    captionEl().textContent = t('qrError');
+  }
+
   function selectChannel(ch, userInitiated) {
     channel = ch;
     ORDER.forEach(function (c) {
@@ -139,12 +143,10 @@
     jumpBtnEl().hidden = !(isMobile() && isAlipay);
     if (isAlipay && isMobile()) {
       renderLibPending();
-      loadLib().then(function () { renderCanvas(ch); }).catch(function () {
-        captionEl().textContent = t('qrLoading');
-      });
+      loadLib().then(function () { renderCanvas(ch); }).catch(renderLibFailed);
     } else {
       renderLibPending();
-      loadLib().then(function () { renderCanvas(ch); }).catch(function () { /* leave pending note */ });
+      loadLib().then(function () { renderCanvas(ch); }).catch(renderLibFailed);
     }
 
     /* user taps 支付宝 on mobile → prefer jumping straight into payment;
@@ -152,18 +154,22 @@
     if (userInitiated && isAlipay && isMobile()) tryAlipayJump();
   }
 
-  function tryAlipayJump() {
+  function tryAlipayJump(force) {
+    if (!force && jumpAttemptedAt) return; /* auto jump: once per dialog session */
     jumpAttemptedAt = Date.now();
-    /* the raw QR content IS a normal https URL — let it open; the page and
-       browser handle the app hand-off. No invented schemes. */
-    location.href = CONFIG.alipay.qrContent;
+    /* the raw QR content IS a normal https URL — hand it to the official
+       page in a new tab; browser + Alipay handle the app hand-off. The QR
+       stays on screen as the natural fallback. No invented schemes. */
+    global.open(CONFIG.alipay.qrContent, '_blank', 'noopener');
   }
 
   function showReturnFallback() {
-    if (!dialogOpen || Date.now() - jumpAttemptedAt < 800) return;
+    /* only meaningful right after an actual jump attempt (jumpAttemptedAt
+       truthy) — otherwise a plain tab-switch would also fire here */
+    if (!dialogOpen || !jumpAttemptedAt || Date.now() - jumpAttemptedAt < 800) return;
     jumpAttemptedAt = 0;
-    fallbackEl().hidden = false;
-    selectChannel('alipay', false); /* re-render to be safe; no new jump */
+    selectChannel('alipay', false); /* re-render; no new jump */
+    fallbackEl().hidden = false;    /* after selectChannel, which hides it */
   }
 
   function bindLifecycle() {
@@ -214,7 +220,7 @@
     jump.type = 'button';
     jump.id = 'donateJump';
     jump.hidden = true;
-    jump.addEventListener('click', tryAlipayJump);
+    jump.addEventListener('click', function () { tryAlipayJump(true); });
     box.appendChild(jump);
 
     return box;
@@ -237,12 +243,23 @@
       ui.openModal(t('donateTitle') + ' \u2615', buildBody());
       /* generate lazily, only now, exactly per spec */
       renderLibPending();
-      loadLib().then(function () { renderCanvas(channel); }).catch(function () { /* keep note */ });
+      loadLib().then(function () { renderCanvas(channel); }).catch(renderLibFailed);
+      /* mobile: open the official receive page right away (once per dialog
+         session); the QR above is always visible as the fallback */
+      var mobile = isMobile();
+      jumpBtnEl().hidden = !mobile;
+      if (mobile) tryAlipayJump();
     },
     close: function () {
       dialogOpen = false;
       jumpAttemptedAt = 0;
       if (ui) ui.closeModal();
+    },
+    /* app.js generic modal close (ESC / backdrop / ✕) lands here so the
+       donation state can't leak a stale "dialog open" after close */
+    onModalClosed: function () {
+      dialogOpen = false;
+      jumpAttemptedAt = 0;
     }
   };
 })(typeof window !== 'undefined' ? window : globalThis);

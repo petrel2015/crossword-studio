@@ -54,6 +54,9 @@
     modal.hidden = true;
     modalBody.innerHTML = '';
     $('printRoot').innerHTML = '';
+    /* modal closes via ESC / backdrop / ✕ without going through
+       Donation.close — let it drop its dialog state the same way */
+    if (CW.Donation && CW.Donation.onModalClosed) CW.Donation.onModalClosed();
   }
   modal.addEventListener('click', function (ev) {
     if (ev.target.closest('[data-close]')) closeModal();

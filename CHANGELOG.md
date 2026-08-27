@@ -15,7 +15,21 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
-Nothing yet.
+### Fixed
+
+- Donation dialog layout: the Alipay/WeChat tabs and the QR card are
+  stacked vertically and centred again. Both were inline-level boxes that
+  shared one line box and baseline-aligned, which pinned the small tabs to
+  the bottom-left beside the tall QR card.
+- Donation dialog on mobile: opening the dialog now opens the official
+  Alipay receive page via `window.open(url, '_blank', 'noopener')` (once
+  per dialog session) instead of navigating the current tab away; the QR
+  stays visible as the fallback, and the "didn't open automatically" note
+  now actually appears after returning (it was re-hidden immediately, and
+  a plain tab-switch could falsely trigger it on desktop).
+- Donation state no longer leaks when the dialog is closed via ESC /
+  backdrop / ✕ (the generic modal close now resets the donation flags).
+- Chinese fallback hint copy aligned with the unified cross-site spec.
 
 ## [1.2.0] - 2026-08-22 (aggregated; first published 2026-08-22, summarizes the full feature set through 2026-08-27)
 

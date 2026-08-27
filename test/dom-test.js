@@ -364,7 +364,76 @@ async function main() {
   await sleep(80);
   ok($('modalTitle').textContent.indexOf('请作者喝杯咖啡') === 0, 'donate lang: zh title');
   ok(document.getElementById('donateTab-wechat').textContent === '微信支付', 'donate lang: zh tab');
+  ok(document.querySelector('.donate-note').textContent === '没有自动打开？请使用支付宝 / 微信扫码'
+    || document.getElementById('donateFallback').textContent === '没有自动打开？请使用支付宝 / 微信扫码',
+    'donate lang: zh fallback copy per spec');
   click($('langEn'));
+
+  /* ---------- 19. donation contract (regression guard) ---------- */
+  const donationSrc = fs.readFileSync(path.join(__dirname, '..', 'js', 'donation.js'), 'utf8');
+  ok(!/alipays:\/\//i.test(donationSrc), 'donate contract: no alipays:// scheme');
+  ok(!/(src|href|url)\s*[:(=]\s*['"][^'"]*\.(png|jpe?g|svg|webp)/i.test(donationSrc), 'donate contract: no static QR image refs');
+  const cssSrc = fs.readFileSync(path.join(__dirname, '..', 'css', 'style.css'), 'utf8');
+  const clsTokens = new Set();
+  (donationSrc.match(/'[^']{2,80}'/g) || []).forEach(lit => {
+    lit.slice(1, -1).split(/\s+/).forEach(tok => {
+      if (/^(donate-|qr-(card|canvas|host))/.test(tok)) clsTokens.add(tok);
+    });
+  });
+  const cssMissing = [...clsTokens].filter(tok => !new RegExp('\\.' + tok + '(?![\\w-])').test(cssSrc));
+  ok(clsTokens.size > 0 && cssMissing.length === 0,
+    'donate contract: donate/qr classes reconciled with style.css' + (cssMissing.length ? ' — missing ' + cssMissing.join(', ') : ''));
+
+  /* ---------- 20. donation on mobile: Alipay window.open, once per session ---------- */
+  const MOBILE_UA = 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1';
+  const domM = new JSDOM(html, {
+    url: 'http://localhost:8741/',
+    runScripts: 'dangerously',
+    resources: 'usable',
+    pretendToBeVisual: true,
+    beforeParse(w) {
+      w.matchMedia = w.matchMedia || (() => ({ matches: false, addListener() {}, removeListener() {}, addEventListener() {}, removeEventListener() {} }));
+      /* jsdom may ignore its userAgent option — force it on the instance */
+      Object.defineProperty(w.navigator, 'userAgent', { get: () => MOBILE_UA, configurable: true });
+      Object.defineProperty(w.document, 'visibilityState', { get: () => 'visible', configurable: true });
+      w.__opens = [];
+      w.open = function (url, target, features) { w.__opens.push({ url, target, features }); return null; };
+    }
+  });
+  const mw = domM.window;
+  await sleep(400);
+  ok(/Mobi/.test(mw.navigator.userAgent), 'donate mobile: UA override active');
+  const mDoc = mw.document;
+  const mClick = el => el.dispatchEvent(new mw.MouseEvent('click', { bubbles: true, cancelable: true }));
+  mClick(mDoc.getElementById('btnDonate'));
+  await sleep(150);
+  ok(!mDoc.getElementById('modal').hidden, 'donate mobile: dialog opens');
+  ok(mw.__opens.length === 1, 'donate mobile: official page opened once at dialog open');
+  ok(mw.__opens[0] && mw.__opens[0].url === 'https://qr.alipay.com/fkx16432isyyhmx9ttwpi79', 'donate mobile: official receive URL');
+  ok(mw.__opens[0] && mw.__opens[0].target === '_blank', 'donate mobile: opens in new tab');
+  ok(mw.__opens[0] && /noopener/.test(mw.__opens[0].features || ''), 'donate mobile: noopener set');
+  ok(mw.location.href === 'http://localhost:8741/', 'donate mobile: no same-tab navigation');
+  ok(!mDoc.getElementById('donateJump').hidden, 'donate mobile: jump affordance visible');
+  // re-tapping the active Alipay tab must not open a second time this session
+  mClick(mDoc.getElementById('donateTab-alipay'));
+  await sleep(80);
+  ok(mw.__opens.length === 1, 'donate mobile: one auto-jump per dialog session');
+  // back from the payment page → fallback note appears next to the QR
+  await sleep(800);
+  mDoc.dispatchEvent(new mw.Event('visibilitychange'));
+  await sleep(80);
+  ok(!mDoc.getElementById('donateFallback').hidden, 'donate mobile: return fallback note shown');
+  // WeChat on mobile: never jumps, straight to QR
+  mClick(mDoc.getElementById('donateTab-wechat'));
+  await sleep(80);
+  ok(mw.__opens.length === 1, 'donate mobile: WeChat never auto-jumps');
+  // close + reopen → new dialog session, single auto-jump re-armed
+  mDoc.dispatchEvent(new mw.KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+  await sleep(80);
+  mClick(mDoc.getElementById('btnDonate'));
+  await sleep(150);
+  ok(mw.__opens.length === 2, 'donate mobile: reopen re-arms the single auto-jump');
+  domM.window.close();
 
   dom.window.close();
   dom2.window.close();

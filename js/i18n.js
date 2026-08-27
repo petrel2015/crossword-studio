@@ -175,6 +175,7 @@
       jumpAlipay: 'Open in Alipay',
       donateFallback: 'Didn’t open automatically? Scan the QR code instead.',
       qrLoading: 'Generating QR…',
+      qrError: 'Couldn’t generate the QR code — close this dialog and try again.',
 
       settingsTitle: 'AI Settings',
       baseUrl: 'Base URL',
@@ -369,8 +370,9 @@
       scanAlipay: '打开支付宝扫一扫',
       scanWechat: '打开微信扫一扫',
       jumpAlipay: '在支付宝中打开',
-      donateFallback: '没有自动打开？请使用扫一扫。',
+      donateFallback: '没有自动打开？请使用支付宝 / 微信扫码',
       qrLoading: '正在生成二维码…',
+      qrError: '二维码生成失败——请关闭弹窗后重试。',
 
       settingsTitle: 'AI 设置',
       baseUrl: 'Base URL',
