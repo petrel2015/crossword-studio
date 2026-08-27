@@ -1,0 +1,69 @@
+{
+  "schemaVersion": "mimosa-finding-ledger-batch/v1",
+  "batchId": "stop-20260827T033421262Z-43036-3583d9632faf",
+  "runId": "20260827T033421262Z-43036-3583d9632faf",
+  "runStatus": "inconclusive",
+  "coverage": {
+    "status": "partial",
+    "reasons": [
+      {
+        "code": "baseline_partial",
+        "stage": "baseline",
+        "target": ".",
+        "detail": "baseline capture had enumeration or snapshot errors",
+        "affectsCompletion": true
+      },
+      {
+        "code": "project_check_failed",
+        "stage": "baseline",
+        "target": ".",
+        "detail": "baseline_partial: baseline capture had enumeration or snapshot errors",
+        "affectsCompletion": true
+      }
+    ]
+  },
+  "source": {
+    "component": "zcode-hook",
+    "operationId": "Stop"
+  },
+  "revision": "62e6c49323661ff3039ca0c798cd808214b6efb8",
+  "diffHash": "36aee8b35624117748f76821a33fee6c84f66a8edd0bc9d099946b0f05c0dfde",
+  "rulesVersion": "unavailable",
+  "sessionHash": "ddc19e143de7164854d3b03179cc27d40893e4095f6480bbf9eb94405607425b",
+  "reportRef": ".mimosa/reports/task-review-sess_e364eb48-bd17-4edd-880e-97762ba98426-20260827T033421262Z-43036-3583d9632faf.json",
+  "events": [],
+  "observedFindingIds": [],
+  "verifiedFiles": [
+    {
+      "file": "scripts/generate-donate-qr.js",
+      "direct": "complete",
+      "projectContext": "partial"
+    },
+    {
+      "file": "js/i18n.js",
+      "direct": "complete",
+      "projectContext": "partial"
+    },
+    {
+      "file": "js/app.js",
+      "direct": "complete",
+      "projectContext": "partial"
+    },
+    {
+      "file": "test/dom-test.js",
+      "direct": "complete",
+      "projectContext": "partial"
+    },
+    {
+      "file": "test/gen-test.js",
+      "direct": "complete",
+      "projectContext": "partial"
+    },
+    {
+      "file": "test/extract-test.js",
+      "direct": "complete",
+      "projectContext": "partial"
+    }
+  ],
+  "recordedAt": "2026-08-27T03:34:21.448Z"
+}
