@@ -163,12 +163,6 @@
       aiProgress: '{done} of {total} done',
       noClozeN: '{n} word(s) were not found in the article — no cloze clue for them.',
 
-      footerNote: 'No server — everything runs in your browser',
-      donateTag: 'Buy me a coffee ¥4.9',
-      donateAlipay: 'Alipay',
-      donateWechat: 'WeChat',
-      donateScan: 'Scan the code · ¥4.9',
-
       settingsTitle: 'AI Settings',
       baseUrl: 'Base URL',
       model: 'Model',
@@ -351,12 +345,6 @@
       aiArticleBusy: '正在结合文章撰写 {n} 条线索…',
       aiProgress: '已完成 {done} / {total}',
       noClozeN: '有 {n} 个词未在文中找到，未生成填空线索。',
-
-      footerNote: '没有服务器，一切都发生在你的浏览器里',
-      donateTag: '请我喝杯咖啡 ￥4.9',
-      donateAlipay: '支付宝',
-      donateWechat: '微信',
-      donateScan: '扫一扫 · ￥4.9',
 
       settingsTitle: 'AI 设置',
       baseUrl: 'Base URL',

@@ -141,3 +141,16 @@ __Key technical points__:
 - Pure HTML / CSS / JavaScript (ES2017+, classic scripts — works from `file://`)
 - Zero runtime dependencies; jsdom (dev-only) for the end-to-end suite
 - Modern web platform: `CompressionStream`, `ResizeObserver`, `navigator.share`, `localStorage`
+
+---
+
+## Buy me a coffee · 请我喝杯咖啡
+
+If this little tool saves you a puzzle-making afternoon, buy me a coffee for __¥4.9__ — scan either code (also available in the site footer):
+
+<p align="center">
+  <img src="img/donate/alipay-qr.png" width="180" alt="Alipay QR" />
+  <img src="img/donate/wechat-qr.png" width="180" alt="WeChat QR" />
+</p>
+
+<p align="center"><em>支付宝 · 微信</em></p>

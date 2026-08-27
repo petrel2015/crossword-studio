@@ -530,6 +530,45 @@ table.p-grid td .pltr {
 .a4.solution .p-title { font-size: 15pt; }
 .a4.solution .pltr { font-size: 8.5pt; font-weight: 500; }
 
+#app { display: flex; flex-direction: column; min-height: 100dvh; }
+#app > main { flex: 1 0 auto; }
+
+/* ---------- site footer & donate ---------- */
+.site-footer {
+  border-top: 2px solid var(--ink);
+  margin-top: 64px;
+  padding: 18px 0 26px;
+  background: var(--paper);
+}
+.footer-inner {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 14px 24px; flex-wrap: wrap;
+}
+.footer-meta {
+  font-size: 11px; text-transform: uppercase; letter-spacing: .12em;
+  color: var(--gray-text); display: flex; gap: 8px; align-items: center; flex-wrap: wrap;
+}
+.donate { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.donate-tag {
+  font-size: 13px; font-weight: 700;
+  border: 1px solid var(--ink); border-radius: 0;
+  padding: 7px 12px; white-space: nowrap;
+}
+.donate-modal { text-align: center; }
+.donate-modal img {
+  width: min(300px, 68vw); height: auto;
+  border: 1px solid var(--hair-dark);
+  image-rendering: pixelated; display: block; margin: 0 auto 12px;
+}
+.donate-modal .donate-caption {
+  font-size: 13px; color: var(--gray-text); margin: 0;
+}
+
+@media (max-width: 640px) {
+  .footer-inner { flex-direction: column; align-items: flex-start; }
+  .donate { width: 100%; justify-content: space-between; }
+}
+
 /* =====================================================================
    PRINT — everything below only applies on paper
    ===================================================================== */

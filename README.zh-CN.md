@@ -141,3 +141,16 @@ __关键技术点__：
 - 纯 HTML / CSS / JavaScript（ES2017+，经典脚本——`file://` 直接打开也能用）
 - 零运行时依赖；jsdom（仅开发）用于端到端测试
 - 现代 Web 平台能力：`CompressionStream`、`ResizeObserver`、`navigator.share`、`localStorage`
+
+---
+
+## 请我喝杯咖啡 · Buy me a coffee
+
+如果这个小工具帮你省下一个做拼图的下午，欢迎请我喝杯咖啡 __￥4.9__ —— 扫任意一码（网站页脚也有入口）：
+
+<p align="center">
+  <img src="img/donate/alipay-qr.png" width="180" alt="支付宝收款码" />
+  <img src="img/donate/wechat-qr.png" width="180" alt="微信收款码" />
+</p>
+
+<p align="center"><em>支付宝 · 微信</em></p>

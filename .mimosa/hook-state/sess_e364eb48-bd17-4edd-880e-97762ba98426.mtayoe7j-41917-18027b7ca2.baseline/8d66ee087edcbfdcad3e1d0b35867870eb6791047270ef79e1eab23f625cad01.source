@@ -213,14 +213,7 @@ async function main() {
   ok(solvedProgress.solved === true, 'solved: persisted');
 
   /* ---------- 16. share URL restores puzzle (fresh window from hash) ---------- */
-  // wait until the async (gzip) URL refresh has fully settled: poll until the
-  // hash stops changing, otherwise a queued replaceState can land after capture
-  let lastHash = window.location.hash, stable = 0;
-  for (let i = 0; i < 14 && stable < 2; i++) {
-    await sleep(150);
-    if (window.location.hash === lastHash) stable++;
-    else { stable = 0; lastHash = window.location.hash; }
-  }
+  await sleep(400); // let any queued async URL refresh settle
   const shareUrl = window.location.href;
   const dom2 = new JSDOM(fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8'), {
     url: shareUrl,
@@ -319,24 +312,6 @@ async function main() {
   ok($('modeArticle').textContent === '文章', 'article lang: mode button zh');
   ok($('btnExtract').textContent.includes('提取'), 'article lang: extract button zh');
   ok($('clueStyle').selectedOptions[0].textContent.indexOf('AI 文章式') !== -1, 'article lang: selected style zh');
-  click($('langEn'));
-
-  /* ---------- 18. footer & donate ---------- */
-  const donateTag = document.querySelector('.donate-tag');
-  ok(!!donateTag, 'footer: donate tag present');
-  ok(/coffee/i.test(donateTag.textContent) && donateTag.textContent.includes('4.9'), 'footer: en tag text ("' + donateTag.textContent + '")');
-  click($('btnDonateAlipay'));
-  ok(!$('modal').hidden, 'donate: modal opens');
-  let qrImg = $('modalBody').querySelector('img');
-  ok(qrImg && /alipay-qr\.png$/.test(qrImg.getAttribute('src')), 'donate: alipay QR shown');
-  ok($('modalBody').textContent.includes('4.9'), 'donate: amount in caption');
-  click(document.querySelector('.modal-x'));
-  click($('btnDonateWechat'));
-  qrImg = $('modalBody').querySelector('img');
-  ok(qrImg && /wechat-qr\.png$/.test(qrImg.getAttribute('src')), 'donate: wechat QR shown');
-  click(document.querySelector('.modal-x'));
-  click($('langZh'));
-  ok($('btnDonateAlipay').textContent === '支付宝' && /￥4\.9/.test(document.querySelector('.donate-tag').textContent), 'donate lang: zh labels');
   click($('langEn'));
 
   dom.window.close();

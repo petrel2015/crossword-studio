@@ -1,6 +1,7 @@
 /* Algorithm tests for CW.Generator — run with: node test/gen-test.js */
 'use strict';
-const CW = require('../js/generator.js');
+const path = require('path');
+const CW = require(path.join(__dirname, '..', 'js', 'generator.js'));
 const G = CW.Generator;
 
 let passed = 0, failed = 0;

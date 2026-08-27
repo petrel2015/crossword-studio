@@ -1,7 +1,8 @@
 /* Tests for CW.Extract — run with: node test/extract-test.js */
 'use strict';
-const CW = require('../js/generator.js');
-require('../js/extract.js');
+const path = require('path');
+const CW = require(path.join(__dirname, '..', 'js', 'generator.js'));
+require(path.join(__dirname, '..', 'js', 'extract.js'));
 const E = CW.Extract;
 
 let passed = 0, failed = 0;
