@@ -244,10 +244,12 @@ code { font-family: var(--mono); font-size: .92em; background: var(--paper-dim);
 }
 .tb-group { display: flex; gap: 6px; align-items: center; }
 .tb-group + .tb-group { padding-left: 18px; border-left: 1px solid var(--hair); }
-.tb-spacer { flex: 1; }
+.tb-share { margin-left: auto; }
 .timer {
   font-family: var(--mono); font-size: 13px; color: var(--gray-text);
-  padding-left: 14px; white-space: nowrap; font-variant-numeric: tabular-nums;
+  align-self: center;
+  padding-left: 14px; border-left: 1px solid var(--hair);
+  white-space: nowrap; font-variant-numeric: tabular-nums;
 }
 
 /* ---------- solve: layout ---------- */
@@ -632,13 +634,36 @@ table.p-grid td .pltr {
   .panel-head { flex-wrap: wrap; }
   .check { font-size: 15px; }
 
+  /* solve toolbar: full-width grouped rows instead of a squeezed scrolling strip */
   .toolbar-inner {
-    gap: 6px; overflow-x: auto; flex-wrap: nowrap;
-    -webkit-overflow-scrolling: touch; scrollbar-width: none;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    padding-top: 8px; padding-bottom: 10px;
   }
-  .toolbar-inner::-webkit-scrollbar { display: none; }
-  .btn.small { padding: 10px 12px; font-size: 11.5px; }
-  .tb-group + .tb-group { padding-left: 8px; }
+  .tb-group { gap: 6px; }
+  .tb-puzzle { grid-column: 1; grid-row: 1; }
+  .timer {
+    grid-column: 2; grid-row: 1;
+    justify-self: end; align-self: center;
+    border-left: 0; padding-left: 0;
+  }
+  .toolbar-inner > .tb-tools,
+  .toolbar-inner > .tb-share {
+    grid-column: 1 / -1;
+    border-left: 0; padding-left: 0;
+    border-top: 1px solid var(--hair);
+    margin-top: 9px; padding-top: 9px;
+  }
+  .toolbar-inner > .tb-share { margin-left: 0; }
+  .tb-tools { grid-row: 2; }
+  .tb-share { grid-row: 3; }
+  .toolbar-inner .btn.small {
+    flex: 1 1 0; min-width: 0;
+    white-space: nowrap; text-align: center;
+    padding-left: 4px; padding-right: 4px;
+    letter-spacing: .05em;
+  }
+  .btn.small { padding: 10px 6px; font-size: 11.5px; }
 
   .solve-wrap { padding-top: 14px; gap: 20px; }
   .puzzle-heading h2 { font-size: 21px; }
@@ -660,6 +685,19 @@ table.p-grid td .pltr {
   /* tablet portrait: keep the grid generous, clues move below in two columns */
   .solve-wrap { grid-template-columns: 1fr; }
   .grid-frame { justify-content: center; }
+}
+
+@media (max-width: 359px) {
+  /* very narrow phones: tuck the timer beside Share, and let the puzzle
+     group wrap rather than ever truncate a label */
+  .toolbar-inner > .timer { grid-column: 2; grid-row: 3; justify-self: end; }
+  .toolbar-inner > .tb-share { grid-column: 1; grid-row: 3; margin-right: 4px; }
+  .tb-puzzle { flex-wrap: wrap; }
+  .toolbar-inner .btn.small {
+    font-size: 10px; letter-spacing: .02em;
+    padding-left: 6px; padding-right: 6px;
+    flex: 0 1 auto;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

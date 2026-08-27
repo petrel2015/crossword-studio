@@ -6,7 +6,7 @@
 <title>Crossword Studio</title>
 <meta name="description" content="Generate newspaper-style English crossword puzzles from your own word list. Solve online, print, export PDF, share by link.">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23fff'/%3E%3Cpath d='M11 3h4v6h6v4h-6v6h-4v-6H5V9h6z' fill='%23111'/%3E%3Crect x='21' y='21' width='8' height='8' fill='%23111'/%3E%3C/svg%3E">
-<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/style.css?v=20260827">
 </head>
 <body>
 
@@ -129,23 +129,22 @@
   <main id="viewSolve" hidden>
     <div class="toolbar">
       <div class="toolbar-inner container">
-        <div class="tb-group" role="group" aria-label="Puzzle">
+        <div class="tb-group tb-puzzle" role="group" aria-label="Puzzle">
           <button id="btnEdit" class="btn small" type="button" data-i18n="edit">Edit</button>
           <button id="btnRegenerate" class="btn small" type="button" data-i18n="regenerate">Regenerate</button>
           <button id="btnExit" class="btn small" type="button" data-i18n="exit">Exit</button>
         </div>
-        <div class="tb-group" role="group" aria-label="Solve tools">
+        <div class="tb-group tb-tools" role="group" aria-label="Solve tools">
           <button id="btnCheck" class="btn small" type="button" data-i18n="check">Check</button>
           <button id="btnHint" class="btn small" type="button" data-i18n="hint">Hint</button>
           <button id="btnReveal" class="btn small" type="button" data-i18n="reveal">Reveal ▾</button>
           <button id="btnReset" class="btn small" type="button" data-i18n="reset">Reset</button>
         </div>
-        <div class="tb-spacer"></div>
-        <div class="tb-group" role="group" aria-label="Share and print">
+        <div class="tb-group tb-share" role="group" aria-label="Share and print">
           <button id="btnPrint" class="btn small" type="button" data-i18n="printShare">Print / PDF</button>
           <button id="btnShare" class="btn small" type="button" data-i18n="share">Share</button>
-          <span id="timer" class="timer" title="Elapsed time" data-i18n-title="timerTitle">00:00</span>
         </div>
+        <span id="timer" class="timer" title="Elapsed time" data-i18n-title="timerTitle">00:00</span>
       </div>
     </div>
 
