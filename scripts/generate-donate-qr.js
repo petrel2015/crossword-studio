@@ -1,6 +1,8 @@
 /* =====================================================================
-   Generates the donation QR images into img/donate/ (plain black on
-   white, matching the app's print aesthetic).
+   Generates the donation QR images into img/donate/ — these PNGs are
+   ONLY static renditions for the GitHub READMEs. The website itself
+   never ships or loads them: js/donation.js renders the QR live on a
+   canvas from vendor/qrcode.min.js when the dialog opens.
    Payment links come from the author's own receive-money codes —
    the same ones used in petrel2015/chess-reversal-lab.
    Run: node scripts/generate-donate-qr.js   (needs `npm install`)

@@ -661,37 +661,11 @@
   });
 
   /* ---------------- donate ---------------- */
-  var DONATE = {
-    alipay: { img: 'img/donate/alipay-qr.png', url: 'https://qr.alipay.com/fkx16432isyyhmx9ttwpi79' },
-    wechat: { img: 'img/donate/wechat-qr.png' }
-  };
-  function isMobileUA() {
-    return /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-  }
-  function openDonateModal(channel) {
-    var box = el('div', 'donate-modal');
-    var img = el('img');
-    img.src = DONATE[channel].img;
-    img.alt = t(channel === 'alipay' ? 'donateAlipay' : 'donateWechat');
-    box.appendChild(img);
-    box.appendChild(el('p', 'donate-caption', t('donateScan')));
-    openModal(t('donateTag'), box);
-  }
-  $('btnDonateAlipay').addEventListener('click', function () {
-    if (isMobileUA()) {
-      /* try to wake the Alipay app; if the page is still visible after 1.5s, show the QR */
-      var before = document.visibilityState;
-      location.href = 'alipays://platformapi/startapp?saId=10000007&qrcode=' + encodeURIComponent(DONATE.alipay.url);
-      setTimeout(function () {
-        if (document.visibilityState === before) openDonateModal('alipay');
-      }, 1500);
-      return;
-    }
-    openDonateModal('alipay');
+  CW.Donation.init({
+    openModal: function (title, bodyEl) { openModal(title, bodyEl); },
+    closeModal: closeModal
   });
-  $('btnDonateWechat').addEventListener('click', function () { openDonateModal('wechat'); });
-  /* preload both QR images so the modal opens instantly */
-  Object.keys(DONATE).forEach(function (ch) { var pre = new Image(); pre.src = DONATE[ch].img; });
+  $('btnDonate').addEventListener('click', function () { CW.Donation.open(); });
 
   /* ---------------- editor drawer ---------------- */
   function openDrawer() {

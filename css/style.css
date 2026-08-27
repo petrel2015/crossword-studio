@@ -548,25 +548,34 @@ table.p-grid td .pltr {
   font-size: 11px; text-transform: uppercase; letter-spacing: .12em;
   color: var(--gray-text); display: flex; gap: 8px; align-items: center; flex-wrap: wrap;
 }
-.donate { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-.donate-tag {
-  font-size: 13px; font-weight: 700;
-  border: 1px solid var(--ink); border-radius: 0;
-  padding: 7px 12px; white-space: nowrap;
+/* second-tier entry: quiet text link, never louder than primary buttons */
+.donate-entry {
+  border: 0; border-radius: 0; background: transparent;
+  font-family: inherit; font-size: 13px; color: var(--gray-text);
+  padding: 6px 2px; cursor: pointer; touch-action: manipulation;
 }
+.donate-entry:hover { color: var(--ink); text-decoration: underline; text-underline-offset: 4px; }
+
 .donate-modal { text-align: center; }
-.donate-modal img {
-  width: min(300px, 68vw); height: auto;
+.donate-desc { font-size: 14px; margin: 0 0 16px; line-height: 1.5; }
+.donate-tabs { justify-content: center; margin-bottom: 16px; }
+.donate-note {
+  font-size: 13px; color: var(--pencil);
+  margin: 0 0 12px;
+}
+.qr-card {
+  display: inline-flex; align-items: center; justify-content: center;
+  background: #fff;           /* QR stays on a light card even in dark themes */
+  min-height: 226px; min-width: 226px;
   border: 1px solid var(--hair-dark);
-  image-rendering: pixelated; display: block; margin: 0 auto 12px;
 }
-.donate-modal .donate-caption {
-  font-size: 13px; color: var(--gray-text); margin: 0;
-}
+.qr-canvas { image-rendering: pixelated; display: block; }
+.donate-caption { font-size: 13px; color: var(--gray-text); margin: 12px 0 4px; }
+.donate-jump { margin-top: 10px; }
 
 @media (max-width: 640px) {
   .footer-inner { flex-direction: column; align-items: flex-start; }
-  .donate { width: 100%; justify-content: space-between; }
+  .donate-entry { padding: 10px 2px; }
 }
 
 /* =====================================================================

@@ -321,22 +321,49 @@ async function main() {
   ok($('clueStyle').selectedOptions[0].textContent.indexOf('AI 文章式') !== -1, 'article lang: selected style zh');
   click($('langEn'));
 
-  /* ---------- 18. footer & donate ---------- */
-  const donateTag = document.querySelector('.donate-tag');
-  ok(!!donateTag, 'footer: donate tag present');
-  ok(/coffee/i.test(donateTag.textContent) && donateTag.textContent.includes('4.9'), 'footer: en tag text ("' + donateTag.textContent + '")');
-  click($('btnDonateAlipay'));
-  ok(!$('modal').hidden, 'donate: modal opens');
-  let qrImg = $('modalBody').querySelector('img');
-  ok(qrImg && /alipay-qr\.png$/.test(qrImg.getAttribute('src')), 'donate: alipay QR shown');
-  ok($('modalBody').textContent.includes('4.9'), 'donate: amount in caption');
-  click(document.querySelector('.modal-x'));
-  click($('btnDonateWechat'));
-  qrImg = $('modalBody').querySelector('img');
-  ok(qrImg && /wechat-qr\.png$/.test(qrImg.getAttribute('src')), 'donate: wechat QR shown');
-  click(document.querySelector('.modal-x'));
+  /* ---------- 18. donation per unified spec ---------- */
+  const entry = $('btnDonate');
+  ok(!!entry && document.querySelectorAll('#btnDonate').length === 1, 'donate: single footer entry');
+  ok(/☕/.test(entry.textContent), 'donate: entry carries ☕');
+  ok(entry.querySelector('[data-i18n="donateEntry"]').textContent === 'Buy me a coffee', 'donate: en entry copy');
+
+  click(entry);
+  ok(!$('modal').hidden, 'donate: dialog opens');
+  const tablist = $('modalBody').querySelector('[role="tablist"]');
+  const tabAli = document.getElementById('donateTab-alipay');
+  const tabWx = document.getElementById('donateTab-wechat');
+  ok(!!tablist && !!tabAli && !!tabWx, 'donate: payment tabs rendered');
+  ok(tabAli.getAttribute('aria-selected') === 'true' && !tabAli.classList.contains('active') === false, 'donate: Alipay default selected');
+  ok($('modalTitle').textContent.includes('Buy me a coffee') && /☕/.test($('modalTitle').textContent), 'donate: dialog title');
+  ok(document.querySelector('.donate-desc').textContent.length > 10, 'donate: description line shown');
+
+  // lazy realtime QR: canvas generated at open time, no static <img>
+  await sleep(350); // vendor lib loads over http from the dev server
+  let qrCanvas = document.querySelector('#donateQrHost .qr-canvas');
+  ok(!!qrCanvas && qrCanvas.tagName === 'CANVAS', 'donate: QR painted onto a live canvas');
+  ok(document.querySelectorAll('.donate-modal img, .qr-card img').length === 0, 'donate: no static QR images in dialog');
+  ok(qrCanvas.getAttribute('aria-label') === 'Scan with Alipay', 'donate: alipay scan caption/aria');
+  const aliCanvas = qrCanvas;
+
+  tabWx.click();
+  await sleep(60);
+  ok(tabWx.getAttribute('aria-selected') === 'true' && !tabAli.getAttribute('aria-selected') === false ? true : tabWx.classList.contains('active'), 'donate: wechat tab activates');
+  const wxCanvas = document.querySelector('#donateQrHost .qr-canvas');
+  ok(wxCanvas && wxCanvas !== aliCanvas, 'donate: switching re-renders QR');
+  ok(wxCanvas.getAttribute('aria-label') === 'Scan with WeChat', 'donate: wechat caption swapped');
+
+  // ESC closes
+  document.dispatchEvent(new window.KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+  await sleep(60);
+  ok($('modal').hidden, 'donate: ESC closes dialog');
+
+  // zh labels
   click($('langZh'));
-  ok($('btnDonateAlipay').textContent === '支付宝' && /￥4\.9/.test(document.querySelector('.donate-tag').textContent), 'donate lang: zh labels');
+  ok(entry.querySelector('[data-i18n="donateEntry"]').textContent === '请作者喝杯咖啡', 'donate lang: zh entry copy');
+  click(entry);
+  await sleep(80);
+  ok($('modalTitle').textContent.indexOf('请作者喝杯咖啡') === 0, 'donate lang: zh title');
+  ok(document.getElementById('donateTab-wechat').textContent === '微信支付', 'donate lang: zh tab');
   click($('langEn'));
 
   dom.window.close();
