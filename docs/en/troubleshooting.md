@@ -27,9 +27,10 @@ Fix: one word per line, 3–12 A–Z letters, no duplicates.
    **Top 10 / All**). Generating with zero selected is blocked by design.
 2. Very short articles are rejected at extraction; paste a longer text
    (a paragraph or more).
-3. If you picked **AI article-style** without configuring AI, a toast
-   explains the problem and you stay in the builder — switch clue style
-   to **Cloze from the text (offline)** or **Auto**.
+3. Picking **AI article-style** is only blocked with a toast (staying in
+   the builder) when a **custom endpoint is half-configured** — the
+   built-in service always counts as configured. Complete the settings,
+   or switch clue style to **Cloze from the text (offline)** or **Auto**.
 
 ### "Some words are listed under the grid and missing from it"
 
@@ -109,7 +110,17 @@ the hash changes with every edit.
 
 ## AI clues
 
-### "AI request failed (HTTP 401/403/404)"
+### "The AI settings are unavailable — please check the configuration"
+
+The built-in service is unreachable or rejected (gateway domain not live
+yet, network down, caller identifier disabled), or a custom endpoint
+failed authentication. Open **AI Settings** and press **Test connection**
+to pin it down: the same failure means a server-side issue; to keep
+puzzling immediately, switch to offline cloze or a local model (Ollama).
+Failed requests are **never auto-retried** — every attempt consumes
+gateway quota, so retrying is your call.
+
+### "The AI request was rejected (…)" / "AI request failed (HTTP …)" (custom endpoints)
 
 1. **401/403** — wrong or unauthorized API key; check the key and its
    quota/permissions.
@@ -121,11 +132,17 @@ the hash changes with every edit.
    or keep clues manual. This is a provider-side restriction — nothing in
    the app (or the hosting) can bypass it.
 
+### "Today's AI quota is used up" / "Too many AI requests" / "temporarily unavailable"
+
+Normal protections on the built-in gateway: the daily quota resets at the
+gateway's local midnight; rate limiting asks you to wait about a minute;
+upstream trouble asks you to retry later. Nothing to configure.
+
 ### "AI clues only filled some words"
 
-Batching is 20 words per request and a failed batch never aborts the
-others — partial results are kept. Click generate/AI-fill again to retry
-the remainder, or write those clues by hand.
+A failed batch never aborts the others — partial results are kept. Click
+generate/AI-fill again to retry the remainder, or write those clues by
+hand.
 
 ## Donation dialog
 

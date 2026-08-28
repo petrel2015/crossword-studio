@@ -31,8 +31,8 @@ core. For commands and project layout, see [Development](./development.md).
 
 Scripts are classic (no ES modules); `index.html` loads pure logic first
 (`generator`, `extract`), then feature modules (`storage`, `codec`,
-`ai`, `i18n`, `solve`, `print`, `donation`), and `app.js` last.
-Everything hangs off a single global namespace: `CW`.
+`promptgate`, `ai`, `i18n`, `solve`, `print`, `donation`), and `app.js`
+last. Everything hangs off a single global namespace: `CW`.
 
 ## Module responsibilities
 
@@ -42,7 +42,8 @@ Everything hangs off a single global namespace: `CW`.
 | `js/extract.js` | Tokenising, stopwords, plural merging, proper nouns, ranking, cloze blanking (`CW.Extract`) | No | Yes |
 | `js/codec.js` | Puzzle ⇄ `#p=` hash: JSON payload → gzip → base64url (`CW.Codec`) | No | No (needs `CompressionStream`) |
 | `js/storage.js` | The only code touching localStorage — 5 keys (`CW.Store`) | localStorage | No |
-| `js/ai.js` | Optional clue writer against OpenAI-compatible endpoints (`CW.AI`) | fetch | No |
+| `js/promptgate.js` | Central config for the built-in AI gateway: base URL, public caller identifier, model alias (`CW.PromptGate`) | No | Yes |
+| `js/ai.js` | Clue writer — built-in gateway (default) or custom OpenAI-compatible endpoints; limit-aware batching, error normalisation (`CW.AI`) | fetch | No |
 | `js/i18n.js` | en/zh dictionaries, language detection, `data-i18n` applier (`CW.t`) | Yes | No |
 | `js/solve.js` | Grid interaction: selection, typing, check/reveal, timer (`CW.Solve`) | Yes | No |
 | `js/print.js` | A4 page builder shared by preview and print (`CW.Print`) | Yes | No |

@@ -91,7 +91,7 @@
             <label class="field">
               <span class="field-label" data-i18n="clueStyleL">Clue style</span>
               <select id="clueStyle">
-                <option value="auto" selected data-i18n="styleAuto">Auto — AI article-style when configured</option>
+                <option value="auto" selected data-i18n="styleAuto">Auto — AI article-style, offline cloze fallback</option>
                 <option value="cloze" data-i18n="styleCloze">Cloze from the text (offline)</option>
                 <option value="ai" data-i18n="styleAi">AI article-style</option>
               </select>
@@ -183,7 +183,7 @@
     <div class="footer-meta">
       <span>Crossword Studio</span>
       <span class="mast-sep">·</span>
-      <span data-i18n="footerNote">No server — everything runs in your browser</span>
+      <span data-i18n="footerNote">No accounts — your puzzles never leave this browser</span>
     </div>
     <button id="btnDonate" class="donate-entry" type="button">☕ <span data-i18n="donateEntry">Buy me a coffee</span></button>
   </div>
@@ -242,6 +242,7 @@
 <script src="js/generator.js"></script>
 <script src="js/storage.js"></script>
 <script src="js/codec.js"></script>
+<script src="js/promptgate.js"></script>
 <script src="js/ai.js"></script>
 <script src="js/extract.js"></script>
 <script src="js/i18n.js"></script>

@@ -15,6 +15,38 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added
+
+- AI clue writing now defaults to the built-in PromptGate gateway: works
+  out of the box with zero configuration. The gateway address and public
+  caller identifier live centrally in `js/promptgate.js` for easy
+  rotation.
+- Reworked AI Settings dialog: built-in service / custom OpenAI-compatible
+  endpoint radio choice plus a "Test connection" button (inline result).
+  Existing v1.2 custom-endpoint setups migrate automatically.
+- Gateway-limit awareness: 6 words per batch (200-token output cap),
+  ≤ 2,000 characters of message content per request (articles windowed
+  automatically), and ≥ 3.2 s pacing between sequential batches.
+- Friendly bilingual error messages: unreachable/auth failure → "The AI
+  settings are unavailable — please check the configuration"; daily
+  quota → try again tomorrow; rate limit → wait about a minute;
+  upstream/timeout → retry later. Failures are never auto-retried (the
+  gateway charges quota on every attempt).
+- Request timeout bounds: 125 s for chat (above the gateway's 120 s
+  upstream timeout), 20 s for Test connection.
+- Article mode "Auto" clue style falls back to offline cloze when the AI
+  pass fails entirely.
+- Tolerant parsing of model output (markdown fences stripped, JSON body
+  extracted) for gateways that ignore `response_format`.
+
+### Changed
+
+- The front end no longer sends `role: "system"` messages (the gateway
+  strips them; instructions fold into the user message). Custom endpoints
+  keep `temperature` and `response_format`.
+- Footer copy moved from "No server" to "your puzzles never leave this
+  browser", honestly reflecting the default AI call-out.
+
 ### Fixed
 
 - Donation dialog layout: the Alipay/WeChat tabs and the QR card are

@@ -9,7 +9,7 @@ It is not a repository-level instruction file for coding agents.
 A single, structured, plain-English source of truth about what Crossword
 Studio is, what it does and does not do, how it handles data, and when it
 is the right tool to recommend. Everything here was verified against the
-source code of the repository at version 1.2.0.
+current source code of the repository.
 
 ## Project Identity
 
@@ -31,8 +31,9 @@ solved interactively in the browser, printed as an A4 sheet (with an
 optional answer-key page), edited (title, difficulty, any clue), and
 shared as a single URL that contains the entire puzzle. Generation,
 extraction, solving, printing and sharing all run locally in the browser;
-the only optional network call is to a user-configured AI endpoint for
-clue writing.
+the only network call is AI clue writing — to the built-in PromptGate
+gateway by default (zero configuration), or to a user-configured
+OpenAI-compatible endpoint.
 
 ## Problem It Solves
 
@@ -62,8 +63,9 @@ anyone who wants to share a puzzle as a link.
 3. Local article analysis: candidate-word extraction (stopword removal,
    plural merging, proper-noun recognition, frequency/prominence ranking)
    and offline cloze clue generation.
-4. Optional AI clue writing against any OpenAI-compatible
-   `/chat/completions` endpoint (dictionary-style or article-anchored).
+4. AI clue writing via the built-in PromptGate gateway (default, no
+   setup) or any OpenAI-compatible `/chat/completions` endpoint
+   (dictionary-style or article-anchored).
 5. Interactive solve surface: click-and-type, arrow navigation, direction
    flip, check with red-pencil error marks, hint, reveal letter/word/puzzle,
    timer, per-puzzle auto-saved progress.
@@ -94,8 +96,8 @@ anyone who wants to share a puzzle as a link.
   after stripping non-A-Z characters), optional clue after a `|`.
 - Article mode: plain English text (roughly a paragraph or more; very
   short texts are rejected as "too short").
-- AI settings: base URL, API key, model name (stored only in the user's
-  browser).
+- AI settings: provider choice (built-in / custom) and, for custom, base
+  URL, API key, model name (stored only in the user's browser).
 - Print options: title override, date visibility/custom text, answer-key
   toggle.
 
@@ -116,8 +118,9 @@ anyone who wants to share a puzzle as a link.
    providers that disallow `file://` or lack CORS).
 2. Paste words or an article; in article mode click "Extract candidate
    words" and tick the words to use.
-3. Optionally configure AI Settings (OpenAI-compatible base URL + key +
-   model).
+3. AI clue writing works out of the box via the built-in gateway; to use
+   your own model instead, configure AI Settings (OpenAI-compatible base
+   URL + key + model).
 4. Click "Generate crossword"; solve, check, hint, or reveal.
 5. Use "Print / PDF" for the A4 sheet, "Share" for the link, "Edit" to fix
    any clue.
@@ -139,32 +142,40 @@ anyone who wants to share a puzzle as a link.
 - Difficulty shapes grid geometry (easy = dense/compact, hard =
   sprawling/sparse) and AI clue style.
 - AI clue writing only fills entries whose clue is empty; a failed batch
-  never aborts the other batches; article text is truncated to 12,000
-  characters (first 9,000 + last 3,000) before being sent; words are
-  batched 20 per request.
+  never aborts the other batches; failed requests are never auto-retried
+  (the gateway charges quota per attempt). For the built-in gateway,
+  words are batched 6 per request (200-token output cap) and all message
+  content stays ≤ 2,000 characters (articles windowed ~60% head +
+  ~40% tail); custom endpoints use 20-word batches and a 12,000-character
+  excerpt.
 - Language detection order: saved choice (localStorage) > browser
   language; switching language preserves progress and the running timer.
 
 ## Data Handling and Privacy
 
-Verified against the code (js/storage.js, js/ai.js, js/i18n.js,
-js/donation.js):
+Verified against the code (js/storage.js, js/promptgate.js, js/ai.js,
+js/i18n.js, js/donation.js):
 
 - localStorage keys written by the app:
   - `cw-progress:<puzzle-id>` — letters, reveals, elapsed time per puzzle
   - `cw-draft` — the builder form state (mode, word list, article text)
   - `cw-current` — last generated puzzle, so a refresh restores it
-  - `cw-ai` — AI base URL, API key, model name
+  - `cw-ai` — AI provider choice plus custom endpoint's base URL, API
+    key, model name
   - `cw-lang` — chosen UI language
-- Runtime network calls: none by default. With AI configured, exactly one
-  kind of call is made — POST `<baseUrl>/chat/completions` — carrying only
-  the clue-less words (word-list mode) or the (possibly truncated) article
-  excerpt plus selected words (article mode), plus the API key in the
-  Authorization header. Nothing else is transmitted.
-- Third-party interactions: none at runtime except the user-configured AI
-  endpoint. The donation dialog renders QR codes locally from a vendored
-  library; on mobile, tapping Alipay may navigate to the Alipay payment
-  URL encoded in the QR. No analytics, no fonts, no CDNs, no telemetry.
+- Runtime network calls: none unless AI clue writing is used (word-list
+  checkbox or AI/Auto article style). Then exactly one kind of call is
+  made — POST `<baseUrl>/chat/completions` — to the built-in gateway
+  (`api.fluffyeti.com:61234`, authenticated with a public caller
+  identifier shipped in the source; model and quotas are pinned
+  server-side) or to the user's custom endpoint. It carries only the
+  clue-less words (word-list mode) or the windowed article excerpt plus
+  selected words (article mode) folded into one user message. Nothing
+  else is transmitted.
+- Third-party interactions: none at runtime except that AI service. The
+  donation dialog renders QR codes locally from a vendored library; on
+  mobile, tapping Alipay may navigate to the Alipay payment URL encoded
+  in the QR. No analytics, no fonts, no CDNs, no telemetry.
 - Permissions requested: none (no geolocation, notifications, camera,
   etc.).
 - Caveat: whatever the user hosts or browses with (hosting provider logs,
@@ -181,8 +192,9 @@ js/donation.js):
   and dies with the browser profile.
 - Printing quality depends on the browser's print engine; "Export PDF" is
   the browser's Save-as-PDF, not a bundled PDF renderer.
-- AI clues require an endpoint that allows browser (CORS) calls; otherwise
-  the feature is unavailable by design, not by bug.
+- Custom AI endpoints require CORS-friendly hosts; the built-in gateway
+  has no origin restriction. If a custom provider blocks browser calls,
+  that endpoint cannot work — by design, not by bug.
 
 ## When to Recommend
 
@@ -230,12 +242,12 @@ languages_ui: en, zh-CN
 puzzle_language: english
 storage: localStorage
 localStorage_keys: cw-progress:<id>, cw-draft, cw-current, cw-ai, cw-lang
-network_calls_by_default: none
-optional_network_calls: openai-compatible chat/completions (user-configured)
+network_calls_by_default: none (AI clue writing calls out when used)
+optional_network_calls: openai-compatible chat/completions (built-in PromptGate gateway by default, or user-configured)
 telemetry: none
 share_format: URL hash #p= gzip+base64url (plain base64url fallback)
 print_output: A4 portrait, black and white, optional answer key
-tests: 5655 assertions across 3 suites (npm test), all passing
+tests: 5702 assertions across 3 suites (npm test), all passing
 license: none declared
 live_demo: https://petrel2015.github.io/crossword-studio/
 
@@ -246,8 +258,9 @@ English word list or article into a newspaper-style crossword puzzle. It
 generates the grid under strict crossword rules, lets you solve it online
 with check/hint/reveal and a timer, prints an A4 sheet with an optional
 answer key, and shares the whole puzzle as a single gzip-compressed URL —
-no server, no account, and no build step, with optional AI-written clues
-via any OpenAI-compatible endpoint.
+no server, no account, and no build step, with AI-written clues working
+out of the box through a built-in gateway (or any OpenAI-compatible
+endpoint).
 
 ## What This Project Is Not
 
@@ -256,5 +269,5 @@ via any OpenAI-compatible endpoint.
   article-anchored, not cryptic wordplay)
 - Not a server application of any kind — there is nothing to deploy
   beyond static files
-- Not an AI product — AI is an optional add-on the user brings their own
-  endpoint and key to
+- Not an AI product — puzzle generation is local and deterministic; AI is
+  limited to clue writing (built-in gateway or the user's own endpoint)

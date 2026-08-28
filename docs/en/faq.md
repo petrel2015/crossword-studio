@@ -11,11 +11,12 @@ network at all. Only AI clue writing needs connectivity (see
 [AI clues](./usage.md#ai-clues)).
 
 **Does my data go to a server?**
-No. There is no server. Words, articles, puzzles, progress and AI
-settings live in your browser's localStorage; the audited network
-behavior is documented in [Privacy](./privacy.md). The only outbound
-call the app can ever make is the optional AI clue request to an
-endpoint you configure.
+Puzzle data does not. There are no accounts and no server-side storage:
+words, articles, puzzles, progress and AI settings live in your browser's
+localStorage; the audited network behavior is documented in
+[Privacy](./privacy.md). The only outbound call the app can make is the
+AI clue request — to the built-in AI gateway by default, or to an
+endpoint you configure. Skip AI and there is no outbound traffic at all.
 
 **Can I make crosswords in other languages (Chinese, German…)?**
 The grid and clues are English-centric: words are sanitized to A–Z
@@ -51,10 +52,12 @@ mobile. Share links prefer `CompressionStream` and fall back to plain
 base64url in older engines — older browsers just get longer URLs.
 
 **Do I need an OpenAI account? AI key?**
-No — AI clues are optional. Without configuration, clues stay blank and
-editable and article mode uses offline cloze clues. If you do want AI
-clues, any OpenAI-compatible endpoint works (OpenAI, DeepSeek, Volcengine
-Ark, local Ollama…), and your key stays in your browser. See
+No — AI clue writing works out of the box through the built-in AI
+service, with no account or key of any kind. To use your own model
+instead, any OpenAI-compatible endpoint works (OpenAI, DeepSeek,
+Volcengine Ark, local Ollama…), and your key stays in your browser. When
+AI is unavailable, clues stay blank and editable and article mode falls
+back to offline cloze clues. See
 [AI clues](./usage.md#ai-clues).
 
 **Why does "Export PDF" open the print dialog?**
