@@ -462,9 +462,13 @@
 
   function updateAiStatus() {
     var cfg = AI.getConfig();
-    var ready = !!(cfg.baseUrl && cfg.model);
-    $('aiStatus').textContent = ready ? t('aiReady', { model: cfg.model }) : t('aiOff');
-    $('aiStatusNote').textContent = ready ? cfg.model : t('aiNotConfigured');
+    var ready = AI.isConfigured();
+    $('aiStatus').textContent = !ready ? t('aiOff')
+      : cfg.provider === 'builtin' ? t('aiReadyBuiltin')
+      : t('aiReady', { model: cfg.model });
+    $('aiStatusNote').textContent = !ready ? t('aiNotConfigured')
+      : cfg.provider === 'builtin' ? t('aiBuiltinTag')
+      : cfg.model;
   }
 
   /* ---------------- generation ---------------- */
@@ -492,7 +496,7 @@
           words.forEach(function (w) { if (map[w.answer]) { w.clue = map[w.answer]; got++; } });
           toast(got ? t(got === 1 ? 'aiWrote1' : 'aiWroteN', { n: got }) : t('aiNoUsable'), !got);
         } catch (err) {
-          toast(err.message, true);
+          toast(AI.friendlyError(err), true);
         }
         closeModal();
       } else {
@@ -512,6 +516,20 @@
     toast(note, !!layout.unplaced.length);
   }
   $('btnGenerate').addEventListener('click', generatePuzzle);
+
+  /* article mode: fill cloze clues for words still missing one (cloze style
+     fills all of them; auto style uses it as the offline fallback when the
+     AI service is unreachable). Returns how many words had no cloze match. */
+  function fillCloze(article, words) {
+    var missing = 0;
+    words.forEach(function (w) {
+      if (w.clue) return;
+      var cz = CW.Extract.clozeFor(article, w.answer);
+      if (cz) w.clue = t('clozePrefix') + '“' + cz + '”';
+      else missing++;
+    });
+    return missing;
+  }
 
   /* article mode: selected candidates → clues from the article (AI or cloze) */
   async function generateFromArticle() {
@@ -542,16 +560,12 @@
         words.forEach(function (w) { if (map[w.answer]) { w.clue = map[w.answer]; got++; } });
         toast(got ? t(got === 1 ? 'aiWrote1' : 'aiWroteN', { n: got }) : t('aiNoUsable'), !got);
       } catch (err) {
-        toast(err.message, true);
+        toast(AI.friendlyError(err), true);
       }
       closeModal();
+      if (style === 'auto') fillCloze(article, words);
     } else {
-      var missing = 0;
-      words.forEach(function (w) {
-        var cz = CW.Extract.clozeFor(article, w.answer);
-        if (cz) w.clue = t('clozePrefix') + '“' + cz + '”';
-        else missing++;
-      });
+      var missing = fillCloze(article, words);
       if (missing) toast(t('noClozeN', { n: missing }), true);
     }
 
@@ -838,38 +852,98 @@
 
   /* ---------------- AI settings ---------------- */
   $('btnSettings').addEventListener('click', function () {
-    var cfg = AI.getConfig();
+    var saved = CW.Store.loadAiConfig() || {};
+    var custom = saved.baseUrl || saved.provider === 'custom'
+      ? { baseUrl: saved.baseUrl || '', model: saved.model || '', apiKey: saved.apiKey || '' }
+      : { baseUrl: '', model: '', apiKey: '' };
+    var isBuiltin = !(saved.baseUrl || saved.provider === 'custom');
     var box = el('div');
+
+    box.appendChild(el('p', 'modal-p', t('settingsP')));
+
+    var provField = el('div', 'field');
+    provField.appendChild(el('span', 'field-label', t('providerLabel')));
+    var rowB = el('label', 'check-row');
+    var rBuiltin = el('input'); rBuiltin.type = 'radio'; rBuiltin.name = 'aiProvider';
+    rBuiltin.value = 'builtin'; rBuiltin.checked = isBuiltin;
+    rowB.appendChild(rBuiltin);
+    rowB.appendChild(el('span', null, t('providerBuiltin')));
+    var rowC = el('label', 'check-row');
+    var rCustom = el('input'); rCustom.type = 'radio'; rCustom.name = 'aiProvider';
+    rCustom.value = 'custom'; rCustom.checked = !isBuiltin;
+    rowC.appendChild(rCustom);
+    rowC.appendChild(el('span', null, t('providerCustom')));
+    provField.appendChild(rowB);
+    provField.appendChild(rowC);
+    box.appendChild(provField);
+
+    var customWrap = el('div');
+    customWrap.hidden = isBuiltin;
 
     var f1 = el('label', 'field');
     f1.appendChild(el('span', 'field-label', t('baseUrl')));
-    var i1 = el('input'); i1.type = 'text'; i1.value = cfg.baseUrl;
+    var i1 = el('input'); i1.type = 'text'; i1.value = custom.baseUrl;
     i1.placeholder = 'https://api.openai.com/v1';
     f1.appendChild(i1);
 
     var f2 = el('label', 'field');
     f2.appendChild(el('span', 'field-label', t('model')));
-    var i2 = el('input'); i2.type = 'text'; i2.value = cfg.model;
+    var i2 = el('input'); i2.type = 'text'; i2.value = custom.model;
     i2.placeholder = 'gpt-4o-mini';
     f2.appendChild(i2);
 
     var f3 = el('label', 'field');
     f3.appendChild(el('span', 'field-label', t('apiKey')));
-    var i3 = el('input'); i3.type = 'password'; i3.value = cfg.apiKey;
+    var i3 = el('input'); i3.type = 'password'; i3.value = custom.apiKey;
     i3.placeholder = 'sk-…';
     f3.appendChild(i3);
+
+    customWrap.appendChild(f1); customWrap.appendChild(f2); customWrap.appendChild(f3);
+    box.appendChild(customWrap);
+
+    var testRow = el('div', 'btn-row');
+    var testBtn = btn(t('aiTestBtn'));
+    var testOut = el('span', 'field-hint ai-test-out');
+    testRow.appendChild(testBtn);
+    box.appendChild(testRow);
+    box.appendChild(testOut);
 
     var row = el('div', 'btn-row');
     var save = btn(t('saveBtn'), 'primary');
     var clear = btn(t('clearBtn'));
     row.appendChild(save); row.appendChild(clear);
-
-    box.appendChild(el('p', 'modal-p', t('settingsP')));
-    box.appendChild(f1); box.appendChild(f2); box.appendChild(f3); box.appendChild(row);
+    box.appendChild(row);
     box.appendChild(el('p', 'modal-note', t('settingsNote')));
 
+    function currentCfg() {
+      var provider = rBuiltin.checked ? 'builtin' : 'custom';
+      return { provider: provider, baseUrl: i1.value.trim(), model: i2.value.trim(), apiKey: i3.value.trim() };
+    }
+    function syncFields() {
+      customWrap.hidden = rBuiltin.checked;
+    }
+    rBuiltin.addEventListener('change', syncFields);
+    rCustom.addEventListener('change', syncFields);
+
+    testBtn.addEventListener('click', function () {
+      var cfg = AI.resolveConfig(currentCfg());
+      if (!cfg.baseUrl || (cfg.provider === 'custom' && !cfg.model)) {
+        testOut.textContent = t('settingsNeed');
+        return;
+      }
+      testBtn.disabled = true;
+      testOut.textContent = t('aiTesting');
+      AI.ping(cfg).then(function () {
+        testOut.textContent = t('aiTestOk');
+      }).catch(function (err) {
+        testOut.textContent = AI.friendlyError(err);
+      }).then(function () {
+        testBtn.disabled = false;
+      });
+    });
+
     save.addEventListener('click', function () {
-      AI.saveConfig({ baseUrl: i1.value.trim(), model: i2.value.trim(), apiKey: i3.value.trim() });
+      AI.saveConfig(currentCfg());
       updateAiStatus();
       closeModal();
       toast(AI.isConfigured() ? t('settingsSaved') : t('settingsNeed'), !AI.isConfigured());

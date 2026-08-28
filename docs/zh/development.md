@@ -70,8 +70,10 @@ js/
 ├── i18n.js           中英字典、语言检测、data-i18n 应用器
 ├── codec.js          拼图 ⇄ URL 哈希（gzip + base64url，CompressionStream）
 ├── storage.js        localStorage：进度 / 草稿 / AI 设置
-├── ai.js             可选的线索撰写——词典式或文章式
-│                       （文章截断、每批 20 词、进度回调）
+├── promptgate.js     内置 AI 网关配置：地址 / 公开调用方标识 / 模型别名
+│                       （换 key 只改这里）
+├── ai.js             线索撰写——默认内置网关，或自定义 OpenAI 兼容接口
+│                       （限额自适应分批、错误规范化、宽容 JSON 解析）
 ├── solve.js          交互棋盘：选择、输入、检查/揭示、计时
 ├── print.js          A4 页面构建器（屏幕预览 = 真实打印输出）
 ├── donation.js       页脚 ☕ 入口 → 弹窗 → 支付宝/微信切换 → 实时二维码
@@ -79,7 +81,7 @@ js/
 test/
 ├── gen-test.js       算法不变量 —— 5,527 项断言
 ├── extract-test.js   提取不变量 —— 29 项断言
-└── dom-test.js       jsdom 全应用端到端 —— 99 项断言
+└── dom-test.js       jsdom 全应用端到端 —— 146 项断言
 scripts/
 └── generate-donate-qr.js  开发工具，用于生成 README 的静态二维码 PNG
 vendor/
@@ -92,7 +94,8 @@ docs/                 本文档体系（中英双语）与截图（docs/img/）
 
 ## 本地开发注意事项
 
-- 没有环境变量、没有 `.env`、没有特性开关。所有配置都在用户浏览器里
+- 没有环境变量、没有 `.env`、没有特性开关。AI 默认走内置网关（地址与
+  调用方标识在 `js/promptgate.js`），用户级覆盖存在浏览器里
   （AI 设置）——开发期无需配置任何东西。
 - 脚本为经典写法（非 ES 模块）；`index.html` 的加载顺序有讲究：
   `generator`、`extract` 先行（纯逻辑），随后是各功能模块，`app.js`

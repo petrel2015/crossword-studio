@@ -64,9 +64,9 @@ English docs: [English index](./docs/en/index.md) · [Changelog](./CHANGELOG.md)
 
 → 设计决策：[文章提取与挖空](./docs/zh/features/article-extraction-cloze.md)
 
-### AI 线索撰写（可选）
+### AI 线索撰写
 
-把应用指向任意 OpenAI 兼容的 `/chat/completions` 接口，即可撰写词典式线索（词表模式）或文章式线索（文章模式），风格随难度调整。没配置 AI？一切照常——线索留空可编辑，文章模式自动回落到离线挖空。
+默认通过**内置 AI 服务**（PromptGate 网关）开箱即用——无需密钥、无需配置；也可在 **AI 设置**里换成自己的 OpenAI 兼容接口。撰写词典式线索（词表模式）或文章式线索（文章模式），风格随难度调整。AI 不可用？一切照常——线索留空可编辑，文章模式自动回落到离线挖空。
 
 → 设计决策：[AI 线索](./docs/zh/features/ai-clues.md) · 配置表：[使用指南 → AI 线索](./docs/zh/usage.md#ai-线索)
 
@@ -120,7 +120,7 @@ python3 -m http.server 8741
 
 ## 配置 AI 线索
 
-点击右上角 **AI 设置**，填入任意 OpenAI 兼容的 `/chat/completions` 接口：
+AI 线索默认使用内置 AI 服务，无需任何配置。想用自己的模型？点击右上角 **AI 设置**，切换到任意 OpenAI 兼容的 `/chat/completions` 接口：
 
 | 服务商 | Base URL |
 | --- | --- |
@@ -129,9 +129,10 @@ python3 -m http.server 8741
 | DeepSeek | `https://api.deepseek.com/v1` |
 | Ollama（本地） | `http://localhost:11434/v1` |
 
-- API 密钥只保存在你浏览器的 localStorage，只发给你配置的接口。
+- 弹窗里的「**测试连接**」可立即验证当前选择的服务是否可达。
+- 自定义接口的 API 密钥只保存在你浏览器的 localStorage，只发给你配置的接口。
 - 只有无线索的词（词表模式）或文章节选 + 选定词（文章模式）会被发送，其他数据不离开浏览器。
-- 若服务商禁止浏览器直连（CORS），请换用支持 CORS 的接口或保持手动写线索。
+- 失败（不可达 / 限流 / 每日额度用完）以友好文案提示，**绝不自动重试**。若自定义服务商禁止浏览器直连（CORS），请换用支持 CORS 的接口或保持手动写线索。
 
 网络行为逐条审计：[docs/zh/privacy.md](./docs/zh/privacy.md)。
 

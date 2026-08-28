@@ -64,9 +64,9 @@ Paste an article; get ranked candidate words with occurrence counts, one-tap Top
 
 → Design decisions: [Article extraction & cloze](./docs/en/features/article-extraction-cloze.md)
 
-### AI clue writing (optional)
+### AI clue writing
 
-Point the app at any OpenAI-compatible `/chat/completions` endpoint and it writes dictionary-style clues (word-list mode) or article-anchored clues (article mode), in a style matched to the chosen difficulty. No AI configured? Everything still works — clues stay blank and editable, and Article mode falls back to offline cloze.
+Works out of the box through the built-in AI service (a PromptGate gateway — no key, no setup), or switch to your own OpenAI-compatible endpoint in **AI Settings**. It writes dictionary-style clues (word-list mode) or article-anchored clues (article mode), styled by the chosen difficulty. AI unreachable? Everything still works — clues stay blank and editable, and Article mode falls back to offline cloze.
 
 → Design decisions: [AI clue writing](./docs/en/features/ai-clues.md) · Configuration table: [Usage → AI clues](./docs/en/usage.md#ai-clues)
 
@@ -120,7 +120,7 @@ Full walkthrough with screenshots: [docs/en/usage.md](./docs/en/usage.md).
 
 ## Configuring AI Clues
 
-Click **AI Settings** (top right) and point the app at any OpenAI-compatible `/chat/completions` endpoint:
+AI clue writing uses the built-in AI service by default — nothing to configure. Prefer your own model? Click **AI Settings** (top right) and point the app at any OpenAI-compatible `/chat/completions` endpoint:
 
 | Provider | Base URL |
 | --- | --- |
@@ -129,9 +129,10 @@ Click **AI Settings** (top right) and point the app at any OpenAI-compatible `/c
 | DeepSeek | `https://api.deepseek.com/v1` |
 | Ollama (local) | `http://localhost:11434/v1` |
 
-- The API key is stored only in your browser's localStorage and sent only to the endpoint you configure.
+- A **Test connection** button in the dialog verifies the selected service immediately.
+- A custom API key is stored only in your browser's localStorage and sent only to the endpoint you configure.
 - Only clue-less words (word-list mode) or the article excerpt + selected words (article mode) are transmitted; nothing else leaves the browser.
-- If a provider blocks direct browser calls (CORS), use a CORS-friendly endpoint or keep clues manual.
+- Failures (unreachable, rate-limited, daily quota) are reported with a friendly message and never auto-retried. If a custom provider blocks direct browser calls (CORS), use a CORS-friendly endpoint or keep clues manual.
 
 Full network-behaviour audit: [docs/en/privacy.md](./docs/en/privacy.md).
 

@@ -24,6 +24,14 @@ async function main() {
     pretendToBeVisual: true,
     beforeParse(window) {
       window.matchMedia = window.matchMedia || (() => ({ matches: false, addListener() {}, removeListener() {}, addEventListener() {}, removeEventListener() {} }));
+      /* controllable fetch stub: every AI request lands here. Default is a
+         network failure, like an undeployed gateway domain. */
+      window.__fetchCalls = [];
+      window.__fetchImpl = null;
+      window.fetch = function (url, opts) {
+        window.__fetchCalls.push({ url, opts, body: opts && opts.body ? JSON.parse(opts.body) : null });
+        return window.__fetchImpl ? window.__fetchImpl(url, opts) : Promise.reject(new TypeError('Failed to fetch'));
+      };
     }
   });
   const { window } = dom;
@@ -304,13 +312,22 @@ async function main() {
     }
   });
 
-  // AI-style without configuration is blocked with a toast, stays in builder
+  // AI-style is blocked only with an incomplete CUSTOM provider — the
+  // built-in gateway counts as always configured
+  click($('btnSettings'));
+  ok(!!$('modalBody').querySelector('input[name="aiProvider"][value="builtin"]'), 'ai settings: provider radios shown');
+  ok(!$('modalBody').querySelector('input[name="aiProvider"][value="custom"]').checked, 'ai settings: builtin selected by default');
+  click($('modalBody').querySelector('input[name="aiProvider"][value="custom"]'));
+  click(Array.from($('modalBody').querySelectorAll('button')).find(b => b.textContent === 'Save'));
+  await sleep(40);
+  ok($('aiStatus').textContent === 'AI clues: not configured', 'ai settings: incomplete custom → not configured');
+
   click($('btnHome'));
   $('clueStyle').value = 'ai';
   $('clueStyle').dispatchEvent(new window.Event('change', { bubbles: true }));
   click($('btnGenerate'));
   await sleep(120);
-  ok(!$('viewBuilder').hidden, 'article: AI style without config aborts');
+  ok(!$('viewBuilder').hidden, 'article: AI style with incomplete custom provider aborts');
 
   // draft persistence + zh strings for the article flow
   const draftNow = JSON.parse(window.localStorage.getItem('cw-draft'));
@@ -321,7 +338,114 @@ async function main() {
   ok($('clueStyle').selectedOptions[0].textContent.indexOf('AI 文章式') !== -1, 'article lang: selected style zh');
   click($('langEn'));
 
-  /* ---------- 18. donation per unified spec ---------- */
+  /* ---------- 18. built-in PromptGate provider ---------- */
+  // restore the built-in provider after the custom-guard scenario above
+  click($('btnSettings'));
+  click($('modalBody').querySelector('input[name="aiProvider"][value="builtin"]'));
+  click(Array.from($('modalBody').querySelectorAll('button')).find(b => b.textContent === 'Save'));
+  await sleep(40);
+  ok($('aiStatus').textContent === 'AI clues: built-in service', 'ai builtin: status line');
+  ok(JSON.parse(window.localStorage.getItem('cw-ai')).provider === 'builtin', 'ai builtin: provider persisted');
+
+  // request shape against the gateway contract
+  window.__fetchCalls.length = 0;
+  window.__fetchImpl = () => Promise.resolve({
+    ok: true,
+    json: () => Promise.resolve({ choices: [{ message: { role: 'assistant', content: '{"clues":{"BANANA":"stub banana clue","MELON":"stub melon clue"}}' } }] })
+  });
+  const clueMap = await window.CW.AI.fillClues([{ answer: 'BANANA' }, { answer: 'MELON' }], 'medium');
+  ok(clueMap.BANANA === 'stub banana clue', 'ai builtin: fillClues returns stubbed clue');
+  ok(window.__fetchCalls.length === 1, 'ai builtin: one request for two words');
+  const gw = window.__fetchCalls[0];
+  const wordsIn = c => c.split('\nWORDS:\n').pop().split('\n').length;
+  ok(gw.url === 'https://api.fluffyeti.com:61234/v1/chat/completions', 'ai builtin: gateway URL');
+  ok(/^Bearer pk_crossword_/.test(gw.opts.headers.Authorization), 'ai builtin: bearer caller id');
+  ok(gw.body.model === 'crossword-assistant', 'ai builtin: model alias');
+  ok(gw.body.messages.length === 1 && gw.body.messages[0].role === 'user', 'ai builtin: single user message, no system role');
+  ok(!('temperature' in gw.body) && !('response_format' in gw.body), 'ai builtin: strict body — extra fields omitted');
+  const charCount = gw.body.messages.reduce((n, msg) => n + msg.content.length, 0);
+  ok(charCount <= 2000, 'ai builtin: within the 2000-char input cap (' + charCount + ')');
+
+  // batching: 8 words → 2 batches of ≤ 6 (gateway caps output at 200 tokens)
+  window.__fetchCalls.length = 0;
+  const eight = ['ALPHA', 'BRAVO', 'CHARLIE', 'DELTA', 'ECHO', 'FOXTROT', 'GOLF', 'HOTEL'].map(w => ({ answer: w }));
+  await window.CW.AI.fillClues(eight, 'easy');
+  ok(window.__fetchCalls.length === 2, 'ai builtin: 8 words split into 2 batches');
+  ok(window.__fetchCalls.every(c => wordsIn(c.body.messages[0].content) <= 6), 'ai builtin: ≤ 6 words per request');
+
+  // network failure (undeployed domain) → the "check configuration" message
+  window.__fetchImpl = () => Promise.reject(new TypeError('Failed to fetch'));
+  let netErr = null;
+  await window.CW.AI.fillClues([{ answer: 'APPLE' }], 'easy').catch(e => { netErr = e; });
+  ok(/check the configuration/.test(window.CW.AI.friendlyError(netErr)), 'ai builtin: network failure message');
+
+  // daily circuit breaker
+  window.__fetchImpl = () => Promise.resolve({
+    ok: false, status: 429, headers: { get: () => '3600' },
+    text: () => Promise.resolve(JSON.stringify({ error: { message: 'quota', code: 'daily_requests_exceeded' } }))
+  });
+  let dailyErr = null;
+  await window.CW.AI.fillClues([{ answer: 'APPLE' }], 'easy').catch(e => { dailyErr = e; });
+  ok(/tomorrow/.test(window.CW.AI.friendlyError(dailyErr)), 'ai builtin: daily quota message');
+
+  // remaining error kinds map without a round trip
+  ok(/minute/.test(window.CW.AI.friendlyError({ kind: 'rate' })), 'ai builtin: rate-limit message');
+  ok(/later/.test(window.CW.AI.friendlyError({ kind: 'upstream' })), 'ai builtin: upstream message');
+  ok(/CORS/.test(window.CW.AI.friendlyError({ kind: 'unreachable' })), 'ai custom: CORS message for custom endpoints');
+  ok(/input_too_long/.test(window.CW.AI.friendlyError({ kind: 'badrequest', detail: 'input_too_long' })), 'ai builtin: bad-request message');
+  ok(/unreadable/.test(window.CW.AI.friendlyError({ kind: 'badresponse' })), 'ai builtin: unreadable-response message');
+  ok(/in time/.test(window.CW.AI.friendlyError({ kind: 'timeout' })), 'ai builtin: timeout message');
+  ok(window.CW.AI.friendlyError(new Error('boom')) === 'boom', 'ai builtin: unknown errors keep their message');
+
+  // tolerant JSON parsing (gateway ignores response_format)
+  window.__fetchImpl = () => Promise.resolve({
+    ok: true,
+    json: () => Promise.resolve({ choices: [{ message: { role: 'assistant', content: 'Sure — here you go:\n```json\n{"clues":{"APPLE":"fenced clue"}}\n```\nEnjoy!' } }] })
+  });
+  const fencedMap = await window.CW.AI.fillClues([{ answer: 'APPLE' }], 'easy');
+  ok(fencedMap.APPLE === 'fenced clue', 'ai builtin: fenced JSON parsed');
+
+  // UI happy path: sample + AI checkbox → stubbed clues land in the puzzle
+  const until = async (fn, ms) => {
+    const end = Date.now() + ms;
+    while (Date.now() < end) { if (fn()) return true; await sleep(120); }
+    return !!fn();
+  };
+  window.__fetchImpl = () => Promise.resolve({
+    ok: true,
+    json: () => Promise.resolve({ choices: [{ message: { role: 'assistant', content: '{"clues":{"BANANA":"stub banana clue","MELON":"stub melon clue","PLUM":"stub plum clue","PEAR":"stub pear clue"}}' } }] })
+  });
+  click($('btnHome'));
+  click($('modeWords'));
+  click($('btnSample'));
+  ok($('useAi').checked, 'ai ui: AI fill checkbox on');
+  click($('btnGenerate'));
+  ok(await until(() => !$('viewSolve').hidden, 10000), 'ai ui: generated with AI clues');
+  const stubbedClues = Array.from(document.querySelectorAll('.clue .ctext')).map(e => e.textContent);
+  ok(stubbedClues.includes('stub banana clue') && stubbedClues.includes('stub plum clue'), 'ai ui: stubbed clue rendered');
+
+  // settings: Test connection reports an unreachable gateway
+  window.__fetchImpl = () => Promise.reject(new TypeError('Failed to fetch'));
+  click($('btnSettings'));
+  click(Array.from($('modalBody').querySelectorAll('button')).find(b => b.textContent === 'Test connection'));
+  ok(await until(() => /check the configuration/.test(document.querySelector('.ai-test-out').textContent), 10000),
+    'ai settings: test connection failure message');
+  click(document.querySelector('.modal-x'));
+
+  // auto style falls back to offline cloze when the gateway is unreachable
+  click($('btnHome'));
+  click($('modeArticle'));
+  click($('btnCandNone'));
+  const candBoxes = Array.from($('candidateList').querySelectorAll('input'));
+  candBoxes.slice(0, 2).forEach(b => { b.checked = true; b.dispatchEvent(new window.Event('change', { bubbles: true })); });
+  $('clueStyle').value = 'auto';
+  $('clueStyle').dispatchEvent(new window.Event('change', { bubbles: true }));
+  click($('btnGenerate'));
+  ok(await until(() => !$('viewSolve').hidden, 10000), 'ai fallback: auto style still generates offline');
+  const fallbackClues = Array.from(document.querySelectorAll('.clue .ctext')).map(e => e.textContent);
+  ok(fallbackClues.some(c => c.indexOf('From the text') === 0), 'ai fallback: cloze clues filled in');
+
+  /* ---------- 19. donation per unified spec ---------- */
   const entry = $('btnDonate');
   ok(!!entry && document.querySelectorAll('#btnDonate').length === 1, 'donate: single footer entry');
   ok(/☕/.test(entry.textContent), 'donate: entry carries ☕');
@@ -369,7 +493,7 @@ async function main() {
     'donate lang: zh fallback copy per spec');
   click($('langEn'));
 
-  /* ---------- 19. donation contract (regression guard) ---------- */
+  /* ---------- 20. donation contract (regression guard) ---------- */
   const donationSrc = fs.readFileSync(path.join(__dirname, '..', 'js', 'donation.js'), 'utf8');
   ok(!/alipays:\/\//i.test(donationSrc), 'donate contract: no alipays:// scheme');
   ok(!/(src|href|url)\s*[:(=]\s*['"][^'"]*\.(png|jpe?g|svg|webp)/i.test(donationSrc), 'donate contract: no static QR image refs');
@@ -384,7 +508,7 @@ async function main() {
   ok(clsTokens.size > 0 && cssMissing.length === 0,
     'donate contract: donate/qr classes reconciled with style.css' + (cssMissing.length ? ' — missing ' + cssMissing.join(', ') : ''));
 
-  /* ---------- 20. donation on mobile: Alipay window.open, once per session ---------- */
+  /* ---------- 21. donation on mobile: Alipay window.open, once per session ---------- */
   const MOBILE_UA = 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1';
   const domM = new JSDOM(html, {
     url: 'http://localhost:8741/',

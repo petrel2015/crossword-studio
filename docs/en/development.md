@@ -81,8 +81,11 @@ js/
 ├── i18n.js           en/zh dictionaries, detection, data-i18n applier
 ├── codec.js          puzzle ⇄ URL hash (gzip + base64url, CompressionStream)
 ├── storage.js        localStorage: progress / draft / AI settings
-├── ai.js             Optional clue writing — dictionary-style or article-anchored
-│                       (article truncation, 20-word batches, progress callback)
+├── promptgate.js     Built-in AI gateway config: BASE_URL / public caller
+│                       identifier / model alias (rotate the key here)
+├── ai.js             Clue writing — built-in gateway by default or any custom
+│                       OpenAI-compatible endpoint (limit-aware batching,
+│                       error normalisation, tolerant JSON parsing)
 ├── solve.js          Interactive grid: selection, typing, check/reveal, timer
 ├── print.js          A4 page builder (screen preview = real print output)
 ├── donation.js       Footer ☕ entry → dialog → Alipay/WeChat tabs → live QR
@@ -90,7 +93,7 @@ js/
 test/
 ├── gen-test.js       Algorithm invariants — 5,527 checks
 ├── extract-test.js   Extraction invariants — 29 checks
-└── dom-test.js       jsdom end-to-end of the real app — 99 checks
+└── dom-test.js       jsdom end-to-end of the real app — 146 checks
 scripts/
 └── generate-donate-qr.js  Dev utility that rendered the static README QR PNGs
 vendor/
@@ -103,9 +106,10 @@ Module responsibilities and data flow: [Architecture](./architecture.md).
 
 ## Local development notes
 
-- No environment variables, no `.env` files, no feature flags. All
-  configuration lives in the user's browser (AI settings) — there is
-  nothing to configure at development time.
+- No environment variables, no `.env` files, no feature flags. AI defaults
+  to the built-in gateway whose address/caller identifier live in
+  `js/promptgate.js`; user-level overrides live in the browser (AI
+  settings). Nothing to configure at development time.
 - Scripts are classic (no modules); load order in `index.html` matters:
   `generator` and `extract` first (pure logic), then feature modules,
   with `app.js` last as the orchestrator.

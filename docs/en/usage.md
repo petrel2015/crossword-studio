@@ -31,8 +31,8 @@ default follows your browser language. Your choice is remembered.
    many have clues. Parse problems appear underneath (see the error
    table below).
 4. Optionally tick **Write missing clues with AI** (visible only in word
-   list mode; needs [AI configuration](#ai-clues), otherwise the clue is
-   left blank for later editing).
+   list mode; uses the built-in AI service by default — no setup needed —
+   or your own endpoint via [AI Settings](#ai-clues)).
 5. In **Puzzle settings** (mode 2): set a title (max 72 characters) and a
    difficulty:
    - **Easy** — dense, compact grid
@@ -59,7 +59,7 @@ refresh loses nothing.
 4. Select words with the checkboxes, or use **Top 10 / All / None**. Add
    custom words (max 12 letters) with the **add a word** box.
 5. Pick a **Clue style**:
-   - **Auto** — AI article-style when AI is configured, cloze otherwise
+   - **Auto** — AI article-style, falling back to offline cloze if the AI pass fails entirely
    - **Cloze from the text (offline)** — the word is blanked out of its
      own sentence: `From the text: "…the keeper trimmed the ______ each
      dusk"`
@@ -130,8 +130,9 @@ and how tampered links are rejected, see
 
 ## AI Clues {#ai-clues}
 
-Crossword Studio can write clues through any OpenAI-compatible
-`/chat/completions` endpoint:
+Clue writing uses the **built-in AI service** (a PromptGate gateway) by
+default — it works out of the box, no key to configure. In **AI Settings**
+you can instead switch to a **custom OpenAI-compatible endpoint**:
 
 | Provider | Base URL |
 | --- | --- |
@@ -140,20 +141,30 @@ Crossword Studio can write clues through any OpenAI-compatible
 | DeepSeek | `https://api.deepseek.com/v1` |
 | Ollama (local) | `http://localhost:11434/v1` |
 
-Setup: click **AI Settings** (top right) → enter Base URL, API key and
-model name → Save. The key is stored only in your browser's localStorage
-and sent only to that endpoint.
+Setup: click **AI Settings** (top right) → choose "Custom OpenAI-compatible
+endpoint" → enter Base URL, API key and model name → Save. The key is stored
+only in your browser's localStorage and sent only to that endpoint. The
+dialog's **Test connection** button checks immediately whether the selected
+service is reachable.
 
 Behavior:
 
 - Word-list mode fills only entries whose clue is empty.
-- Article mode sends the article excerpt (capped at 12,000 characters)
-  plus the selected words, in batches of 20, with a progress indicator;
-  a failed batch never cancels the others.
+- Article mode sends the article excerpt plus the selected words, in
+  batches with a progress indicator; a failed batch never cancels the
+  others. The built-in service batches automatically to fit its
+  input/output limits (6 words per request, ≤ 2,000 characters of message
+  content in total); custom endpoints use 20 words per batch.
 - Clue style follows difficulty (easy = plain and friendly, hard =
   misdirection and puns).
-- Nothing configured? Everything still works — clues stay blank and
-  editable, and article mode falls back to offline cloze.
+- Failures are reported with a friendly message and are **never
+  auto-retried** (the gateway charges quota on every attempt): service
+  unreachable or auth rejected → "The AI settings are unavailable — please
+  check the configuration"; rate-limited → wait about a minute; daily
+  quota exhausted → try again tomorrow; upstream trouble → retry later.
+- With the **Auto** clue style, a total AI failure falls back to offline
+  cloze clues; in word-list mode a failed AI pass just leaves the clues
+  blank and editable — everything else keeps working.
 
 Network details: [Privacy](./privacy.md). Design decisions:
 [AI clue writing](./features/ai-clues.md).
@@ -168,8 +179,8 @@ Network details: [Privacy](./privacy.md). Design decisions:
 | Word with internal spaces | Listed as a spaces issue |
 | Article too short | "Extract candidate words" does nothing visible — paste a longer text |
 | Generate with no words / no selected candidates | Stays in the builder; nothing is generated |
-| AI style selected without AI configuration | Toast explains AI is not configured; stays in the builder |
-| AI endpoint unreachable or CORS-blocked | Toast with the failure reason; everything else keeps working |
+| AI article-style with an incomplete custom endpoint | Toast explains AI is not configured; stays in the builder (the built-in service always counts as configured) |
+| AI service unreachable / rate-limited / daily quota exhausted | Toast with the matching message (see AI Clues above); everything else keeps working |
 | Word cannot be placed | Listed under the grid with a reason: shares no letters / every crossing conflicts / exceeds the difficulty's grid limit |
 | Share link corrupted or hand-edited | The app refuses to render and reports invalid puzzle data |
 

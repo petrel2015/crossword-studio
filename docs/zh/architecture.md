@@ -29,8 +29,8 @@ Crossword Studio 如何组织。这是纯客户端静态应用——没有后端
 
 脚本为经典写法（非 ES 模块）；`index.html` 先加载纯逻辑
 （`generator`、`extract`），再加载功能模块（`storage`、`codec`、
-`ai`、`i18n`、`solve`、`print`、`donation`），最后 `app.js`。一切都挂
-在唯一的全局命名空间 `CW` 上。
+`promptgate`、`ai`、`i18n`、`solve`、`print`、`donation`），最后
+`app.js`。一切都挂在唯一的全局命名空间 `CW` 上。
 
 ## 模块职责
 
@@ -40,7 +40,8 @@ Crossword Studio 如何组织。这是纯客户端静态应用——没有后端
 | `js/extract.js` | 分词、停用词、复数归并、专有名词、评分、挖空（`CW.Extract`） | 否 | 是 |
 | `js/codec.js` | 拼图 ⇄ `#p=` 哈希：JSON → gzip → base64url（`CW.Codec`） | 否 | 否（需 `CompressionStream`） |
 | `js/storage.js` | 唯一接触 localStorage 的代码——5 个键（`CW.Store`） | localStorage | 否 |
-| `js/ai.js` | 对接 OpenAI 兼容接口的可选线索撰写（`CW.AI`） | fetch | 否 |
+| `js/promptgate.js` | 内置 AI 网关集中配置：地址、公开调用方标识、模型别名（`CW.PromptGate`） | 否 | 是 |
+| `js/ai.js` | 线索撰写——内置网关（默认）或自定义 OpenAI 兼容接口；限额自适应分批、错误规范化（`CW.AI`） | fetch | 否 |
 | `js/i18n.js` | 中英字典、语言检测、`data-i18n` 应用器（`CW.t`） | 是 | 否 |
 | `js/solve.js` | 棋盘交互：选择、输入、检查/揭示、计时（`CW.Solve`） | 是 | 否 |
 | `js/print.js` | 预览与打印共用的 A4 页面构建器（`CW.Print`） | 是 | 否 |
