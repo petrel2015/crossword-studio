@@ -34,7 +34,8 @@
       diffMedium: 'Medium — balanced grid',
       diffHard: 'Hard — sprawling, sparse grid',
       aiFill: 'Write missing clues with AI',
-      aiNotConfigured: '(not configured)',
+      aiNotConfigured: '(configure API in AI Settings)',
+      aiSetupHint: 'To use AI clues, configure your API in AI Settings: Base URL, model, and API key.',
       generate: 'Generate crossword',
       diffHint: 'Difficulty shapes the grid (Easy stays small and dense, Hard may sprawl) and, when AI clues are on, their style.',
 
@@ -245,7 +246,8 @@
       diffMedium: '中等——均衡网格',
       diffHard: '困难——舒展的稀疏网格',
       aiFill: '用 AI 补写缺失的线索',
-      aiNotConfigured: '（未配置）',
+      aiNotConfigured: '（请先设置 API）',
+      aiSetupHint: '使用 AI 线索前，请先在右上角「AI 设置」中填写 API 地址（Base URL）、模型和 API 密钥。',
       generate: '生成填字游戏',
       diffHint: '难度影响网格形态（简单更小更密，困难更舒展），开启 AI 线索时也影响其风格。',
 
