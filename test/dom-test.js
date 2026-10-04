@@ -23,6 +23,7 @@ async function main() {
     resources: 'usable',
     pretendToBeVisual: true,
     beforeParse(window) {
+      Object.defineProperty(window.navigator, 'languages', { value: ['en-US', 'zh-CN'], configurable: true });
       window.matchMedia = window.matchMedia || (() => ({ matches: false, addListener() {}, removeListener() {}, addEventListener() {}, removeEventListener() {} }));
       /* controllable fetch stub: every AI request lands here. Default is a
          network failure, like an undeployed gateway domain. */
@@ -66,6 +67,7 @@ async function main() {
   /* ---------- 3. language switch to zh ---------- */
   click($('langZh'));
   ok(document.documentElement.lang === 'zh-CN', 'lang: html lang=zh-CN');
+  ok($('puzzleTitle').value === '填字游戏', 'lang: default title follows Chinese UI');
   ok($('btnGenerate').textContent.includes('生成'), 'lang: generate button zh');
   ok($('cluesAcross') && document.querySelector('[data-i18n="across"]').textContent === '横向', 'lang: Across → 横向');
   ok($('wordStats').textContent.includes('个单词'), 'lang: stats re-rendered zh');
@@ -81,7 +83,7 @@ async function main() {
   ok(entries >= 8, 'generate: clue list rendered (' + entries + ' entries)');
   ok(window.location.hash.indexOf('#p=') === 0, 'generate: share URL hash set');
   const firstHash = window.location.hash;
-  ok($('puzzleHeading').textContent === 'Orchard Crossword', 'generate: title shown');
+  ok($('puzzleHeading').textContent === 'Crossword', 'generate: title shown');
   ok(!/no clue/.test($('cluesAcross').textContent) === false, 'generate: some clues missing (sample has clue-less words)');
 
   /* ---------- 5. typing letters ---------- */
@@ -250,10 +252,16 @@ async function main() {
   const domHome = new JSDOM(html, {
     url: 'http://localhost:8741/',
     runScripts: 'dangerously', resources: 'usable', pretendToBeVisual: true,
-    beforeParse(w) { w.localStorage.setItem('cw-current', savedPuzzle); }
+    beforeParse(w) {
+      w.localStorage.setItem('cw-current', savedPuzzle);
+      w.localStorage.setItem('cw-draft', JSON.stringify({ title: 'Orchard Crossword' }));
+      Object.defineProperty(w.navigator, 'languages', { value: ['zh-CN', 'en-US'], configurable: true });
+    }
   });
   await sleep(500);
   const home = domHome.window.document;
+  ok(home.documentElement.lang === 'zh-CN' && home.getElementById('puzzleTitle').value === '填字游戏',
+    'homepage: browser language localizes legacy default title');
   ok(!home.getElementById('viewBuilder').hidden && home.getElementById('viewSolve').hidden,
     'homepage: saved puzzle does not hide input modes');
   ok(!home.getElementById('btnResume').hidden, 'homepage: saved puzzle can be resumed');
@@ -339,6 +347,10 @@ async function main() {
   // AI-style is blocked while no custom endpoint is configured
   click($('btnSettings'));
   ok(!$('modalBody').querySelector('input[name="aiProvider"]'), 'ai settings: no provider radios — custom endpoint only');
+  const defaults = $('modalBody').querySelectorAll('input[type="text"]');
+  ok(defaults[0].value === 'https://open.bigmodel.cn/api/paas/v4' && defaults[1].value === 'glm-5.3-flash', 'ai settings: Zhipu defaults prefilled');
+  ok($('modalBody').querySelector('input[type="password"]').value === '', 'ai settings: API key stays empty');
+  click(Array.from($('modalBody').querySelectorAll('button')).find(b => b.textContent === 'Clear'));
   click(Array.from($('modalBody').querySelectorAll('button')).find(b => b.textContent === 'Save'));
   await sleep(40);
   ok($('aiStatus').textContent === 'AI clues: not configured', 'ai settings: empty config → not configured');

@@ -458,7 +458,7 @@
 
   $('btnSample').addEventListener('click', function () {
     $('wordInput').value = SAMPLE;
-    $('puzzleTitle').value = 'Orchard Crossword';
+    $('puzzleTitle').value = t('titlePh');
     refreshBuilderStats();
   });
   $('btnClearWords').addEventListener('click', function () {
@@ -860,9 +860,11 @@
   /* ---------------- AI settings ---------------- */
   $('btnSettings').addEventListener('click', function () {
     var saved = CW.Store.loadAiConfig() || {};
-    var custom = saved.baseUrl || saved.provider === 'custom'
-      ? { baseUrl: saved.baseUrl || '', model: saved.model || '', apiKey: saved.apiKey || '' }
-      : { baseUrl: '', model: '', apiKey: '' };
+    var custom = {
+      baseUrl: saved.baseUrl || 'https://open.bigmodel.cn/api/paas/v4',
+      model: saved.model || (saved.baseUrl ? '' : 'glm-5.3-flash'),
+      apiKey: saved.apiKey || ''
+    };
     var box = el('div');
 
     box.appendChild(el('p', 'modal-p', t('settingsP')));
@@ -872,13 +874,13 @@
     var f1 = el('label', 'field');
     f1.appendChild(el('span', 'field-label', t('baseUrl')));
     var i1 = el('input'); i1.type = 'text'; i1.value = custom.baseUrl;
-    i1.placeholder = 'https://api.openai.com/v1';
+    i1.placeholder = 'https://open.bigmodel.cn/api/paas/v4';
     f1.appendChild(i1);
 
     var f2 = el('label', 'field');
     f2.appendChild(el('span', 'field-label', t('model')));
     var i2 = el('input'); i2.type = 'text'; i2.value = custom.model;
-    i2.placeholder = 'gpt-4o-mini';
+    i2.placeholder = 'glm-5.3-flash';
     f2.appendChild(i2);
 
     var f3 = el('label', 'field');
@@ -958,6 +960,10 @@
   I.onChange(function () {
     updateLangButtons();
     updateMastDate();
+    if (['Orchard Crossword', 'Untitled Crossword', '未命名填字游戏', 'Crossword', '填字游戏'].indexOf($('puzzleTitle').value) !== -1) {
+      $('puzzleTitle').value = t('titlePh');
+      saveDraft();
+    }
     closeModal();
     if (state.layout && !$('viewSolve').hidden) {
       renderHeading();
@@ -993,7 +999,8 @@
     var draft = Store.loadDraft();
     if (draft) {
       $('wordInput').value = draft.text || '';
-      $('puzzleTitle').value = draft.title || '';
+      $('puzzleTitle').value = ['Orchard Crossword', 'Untitled Crossword', '未命名填字游戏', 'Crossword', '填字游戏'].indexOf(draft.title) !== -1
+        ? t('titlePh') : draft.title || '';
       $('difficulty').value = draft.difficulty || 'medium';
       $('articleInput').value = draft.article || '';
       if (draft.clueStyle) $('clueStyle').value = draft.clueStyle;

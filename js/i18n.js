@@ -28,7 +28,7 @@
       wordListHint: 'One word per line. Optional clue:',
       wordInputPh: 'apple | It keeps the doctor away, supposedly\nbanana\norange | Citrus fruit that shares its name with a color\ngrape\nlemon | Sour yellow citrus',
       titleL: 'Title',
-      titlePh: 'Untitled Crossword',
+      titlePh: 'Crossword',
       difficultyL: 'Difficulty',
       diffEasy: 'Easy — dense, compact grid',
       diffMedium: 'Medium — balanced grid',
@@ -240,7 +240,7 @@
       wordListHint: '每行一个单词。可选线索：',
       wordInputPh: 'apple | 据说每天一个，医生远离我\nbanana\norange | 与颜色同名的柑橘类水果\ngrape\nlemon | 酸酸的黄色柑橘',
       titleL: '标题',
-      titlePh: '未命名填字游戏',
+      titlePh: '填字游戏',
       difficultyL: '难度',
       diffEasy: '简单——紧密的小网格',
       diffMedium: '中等——均衡网格',
@@ -447,6 +447,7 @@
     for (var i = 0; i < langs.length; i++) {
       if (!langs[i]) continue;
       if (String(langs[i]).toLowerCase().indexOf('zh') === 0) return 'zh';
+      if (String(langs[i]).toLowerCase().indexOf('en') === 0) return 'en';
     }
     return 'en';
   }
