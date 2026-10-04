@@ -245,6 +245,30 @@ async function main() {
   const restoredClues = d2.querySelectorAll('.clue').length;
   ok(restoredClues === document.querySelectorAll('.clue').length, 'restore: same entry count');
 
+  /* Plain homepage stays on the builder even with a saved puzzle. */
+  const savedPuzzle = window.localStorage.getItem('cw-current');
+  const domHome = new JSDOM(html, {
+    url: 'http://localhost:8741/',
+    runScripts: 'dangerously', resources: 'usable', pretendToBeVisual: true,
+    beforeParse(w) { w.localStorage.setItem('cw-current', savedPuzzle); }
+  });
+  await sleep(500);
+  const home = domHome.window.document;
+  ok(!home.getElementById('viewBuilder').hidden && home.getElementById('viewSolve').hidden,
+    'homepage: saved puzzle does not hide input modes');
+  ok(!home.getElementById('btnResume').hidden, 'homepage: saved puzzle can be resumed');
+  home.getElementById('modeArticle').click();
+  ok(!home.getElementById('articlePanel').hidden, 'homepage: article input is accessible');
+  home.getElementById('btnResume').click();
+  await sleep(300);
+  ok(!home.getElementById('viewSolve').hidden && home.querySelectorAll('#grid .cell').length > 0,
+    'homepage: resume opens saved puzzle');
+  home.getElementById('btnHome').click();
+  await sleep(300);
+  ok(domHome.window.location.hash === '' && !home.getElementById('viewBuilder').hidden,
+    'homepage: exit clears puzzle hash and stays on builder');
+  domHome.window.close();
+
   /* ---------- 17. article mode: extract → pick → cloze clues → generate ---------- */
   const TEST_ARTICLE = 'The lighthouse at Cape Morrow has guarded the coast for a century. ' +
     'Every evening the keeper Alice climbed the iron stairs and lit the lantern. ' +

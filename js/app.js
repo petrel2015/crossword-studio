@@ -108,7 +108,14 @@
   }
 
   /* ---------------- views ---------------- */
-  function showBuilder() { $('viewSolve').hidden = true; $('viewBuilder').hidden = false; closeDrawer(); }
+  function showBuilder() {
+    $('viewSolve').hidden = true;
+    $('viewBuilder').hidden = false;
+    closeDrawer();
+    var saved = Store.loadCurrentPuzzle();
+    $('btnResume').hidden = !(saved && saved.entries && saved.entries.length);
+    history.replaceState(null, '', location.pathname + location.search);
+  }
   function showSolve() { $('viewBuilder').hidden = true; $('viewSolve').hidden = false; }
   function fmt(sec) { return state.solve ? state.solve.fmtTime(sec) : String(sec); }
 
@@ -241,7 +248,7 @@
       if (shareUrlQueued) { shareUrlQueued = false; updateShareUrl(); }
     };
     Codec.encode(payload).then(function (enc) {
-      history.replaceState(null, '', '#p=' + enc);
+      if (!$('viewSolve').hidden) history.replaceState(null, '', '#p=' + enc);
       settle();
     }).catch(settle);
   }
@@ -634,6 +641,10 @@
   $('btnRegenerate').addEventListener('click', regenerate);
   $('btnExit').addEventListener('click', showBuilder);
   $('btnHome').addEventListener('click', showBuilder);
+  $('btnResume').addEventListener('click', function () {
+    var saved = Store.loadCurrentPuzzle();
+    if (saved && saved.entries && saved.entries.length) adoptFromPayload(saved);
+  });
 
   /* ---------------- share ---------------- */
   $('btnShare').addEventListener('click', function () {
@@ -1011,11 +1022,6 @@
           toast(t('linkUnreadable'), true);
           showBuilder();
         });
-      return;
-    }
-    var saved = Store.loadCurrentPuzzle();
-    if (saved && saved.entries && saved.entries.length) {
-      adoptFromPayload(saved);
       return;
     }
     showBuilder();

@@ -20,6 +20,7 @@
       heroT2: 'Get a crossword.',
       heroP: 'Enter one word per line — add your own clue after a vertical bar, or let AI write it. The generator weaves every word it can into a newspaper-style grid; anything that will not fit is reported, never dropped.',
 
+      resumePuzzle: 'Continue last puzzle',
       step1: 'Word list',
       step2: 'Puzzle settings',
       loadSample: 'Load sample',
@@ -230,6 +231,7 @@
       heroT2: '生成填字游戏。',
       heroP: '每行输入一个英文单词——可在竖线后自定义线索，或让 AI 代写。生成器会尽可能把每个词编织进报纸风格的网格；放不下的词会被明确列出，绝不悄悄丢弃。',
 
+      resumePuzzle: '继续上次拼图',
       step1: '词表',
       step2: '拼图设置',
       loadSample: '载入示例',
