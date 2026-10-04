@@ -178,15 +178,12 @@
       qrError: 'Couldn’t generate the QR code — close this dialog and try again.',
 
       settingsTitle: 'AI Settings',
-      providerLabel: 'AI provider',
-      providerBuiltin: 'Built-in AI service — works out of the box, nothing to configure',
-      providerCustom: 'Custom OpenAI-compatible endpoint (Base URL, model, API key)',
       baseUrl: 'Base URL',
       model: 'Model',
       apiKey: 'API key',
       clearBtn: 'Clear',
-      settingsP: 'Clue writing uses the built-in AI service by default — no setup needed. Prefer your own model? Switch to a custom OpenAI-compatible endpoint (OpenAI, DeepSeek, Volcengine Ark, Ollama, LM Studio); its settings are stored only in this browser.',
-      settingsNote: 'Clue requests send only the clue-less words — plus an article excerpt in article mode — to the AI service. Failed requests are reported once, never auto-retried. The built-in service is rate-limited per day.',
+      settingsP: 'Fill in an OpenAI-compatible endpoint (Base URL, model, API key) to enable AI clue writing — OpenAI, DeepSeek, Volcengine Ark, Ollama, LM Studio; settings are stored only in this browser.',
+      settingsNote: 'Clue requests send only the clue-less words — plus an article excerpt in article mode — to the AI service. Failed requests are reported once, never auto-retried.',
       settingsSaved: 'AI settings saved.',
       settingsNeed: 'Fill in Base URL and Model to enable AI clues.',
       aiTestBtn: 'Test connection',
@@ -205,8 +202,6 @@
 
       wordsStat: '{n} words · {m} with clues',
       aiReady: 'AI clues: {model}',
-      aiReadyBuiltin: 'AI clues: built-in service',
-      aiBuiltinTag: '(built-in service)',
       aiOff: 'AI clues: not configured',
       solvedToast: 'Puzzle solved in {t}. Well played.',
 
@@ -393,15 +388,12 @@
       qrError: '二维码生成失败——请关闭弹窗后重试。',
 
       settingsTitle: 'AI 设置',
-      providerLabel: 'AI 服务',
-      providerBuiltin: '内置 AI 服务——开箱即用，无需任何配置',
-      providerCustom: '自定义 OpenAI 兼容接口（Base URL、模型、API 密钥）',
       baseUrl: 'Base URL',
       model: '模型',
       apiKey: 'API 密钥',
       clearBtn: '清空',
-      settingsP: '线索撰写默认使用内置 AI 服务，无需配置。想用自己的模型？可切换到自定义 OpenAI 兼容接口——OpenAI、DeepSeek、火山方舟（https://ark.cn-beijing.volces.com/api/v3）、Ollama、LM Studio；配置只保存在本浏览器中。',
-      settingsNote: 'AI 线索请求只发送无线索的单词本身（文章模式另附文章节选），失败仅提示一次、绝不自动重试。内置服务有频率与每日额度限制。',
+      settingsP: '填写 OpenAI 兼容接口（Base URL、模型、API 密钥）即可用 AI 撰写线索——OpenAI、DeepSeek、火山方舟（https://ark.cn-beijing.volces.com/api/v3）、Ollama、LM Studio；配置只保存在本浏览器中。',
+      settingsNote: 'AI 线索请求只发送无线索的单词本身（文章模式另附文章节选），失败仅提示一次、绝不自动重试。',
       settingsSaved: 'AI 设置已保存。',
       settingsNeed: '请填写 Base URL 和模型以启用 AI 线索。',
       aiTestBtn: '测试连接',
@@ -420,8 +412,6 @@
 
       wordsStat: '{n} 个单词 · {m} 个有线索',
       aiReady: 'AI 线索：{model}',
-      aiReadyBuiltin: 'AI 线索：内置服务',
-      aiBuiltinTag: '（内置服务）',
       aiOff: 'AI 线索：未配置',
       solvedToast: '拼图完成，用时 {t}。干得漂亮。',
 

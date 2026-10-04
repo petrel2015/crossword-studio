@@ -463,12 +463,8 @@
   function updateAiStatus() {
     var cfg = AI.getConfig();
     var ready = AI.isConfigured();
-    $('aiStatus').textContent = !ready ? t('aiOff')
-      : cfg.provider === 'builtin' ? t('aiReadyBuiltin')
-      : t('aiReady', { model: cfg.model });
-    $('aiStatusNote').textContent = !ready ? t('aiNotConfigured')
-      : cfg.provider === 'builtin' ? t('aiBuiltinTag')
-      : cfg.model;
+    $('aiStatus').textContent = !ready ? t('aiOff') : t('aiReady', { model: cfg.model });
+    $('aiStatusNote').textContent = !ready ? t('aiNotConfigured') : cfg.model;
   }
 
   /* ---------------- generation ---------------- */
@@ -856,29 +852,11 @@
     var custom = saved.baseUrl || saved.provider === 'custom'
       ? { baseUrl: saved.baseUrl || '', model: saved.model || '', apiKey: saved.apiKey || '' }
       : { baseUrl: '', model: '', apiKey: '' };
-    var isBuiltin = !(saved.baseUrl || saved.provider === 'custom');
     var box = el('div');
 
     box.appendChild(el('p', 'modal-p', t('settingsP')));
 
-    var provField = el('div', 'field');
-    provField.appendChild(el('span', 'field-label', t('providerLabel')));
-    var rowB = el('label', 'check-row');
-    var rBuiltin = el('input'); rBuiltin.type = 'radio'; rBuiltin.name = 'aiProvider';
-    rBuiltin.value = 'builtin'; rBuiltin.checked = isBuiltin;
-    rowB.appendChild(rBuiltin);
-    rowB.appendChild(el('span', null, t('providerBuiltin')));
-    var rowC = el('label', 'check-row');
-    var rCustom = el('input'); rCustom.type = 'radio'; rCustom.name = 'aiProvider';
-    rCustom.value = 'custom'; rCustom.checked = !isBuiltin;
-    rowC.appendChild(rCustom);
-    rowC.appendChild(el('span', null, t('providerCustom')));
-    provField.appendChild(rowB);
-    provField.appendChild(rowC);
-    box.appendChild(provField);
-
     var customWrap = el('div');
-    customWrap.hidden = isBuiltin;
 
     var f1 = el('label', 'field');
     f1.appendChild(el('span', 'field-label', t('baseUrl')));
@@ -916,18 +894,12 @@
     box.appendChild(el('p', 'modal-note', t('settingsNote')));
 
     function currentCfg() {
-      var provider = rBuiltin.checked ? 'builtin' : 'custom';
-      return { provider: provider, baseUrl: i1.value.trim(), model: i2.value.trim(), apiKey: i3.value.trim() };
+      return { provider: 'custom', baseUrl: i1.value.trim(), model: i2.value.trim(), apiKey: i3.value.trim() };
     }
-    function syncFields() {
-      customWrap.hidden = rBuiltin.checked;
-    }
-    rBuiltin.addEventListener('change', syncFields);
-    rCustom.addEventListener('change', syncFields);
 
     testBtn.addEventListener('click', function () {
       var cfg = AI.resolveConfig(currentCfg());
-      if (!cfg.baseUrl || (cfg.provider === 'custom' && !cfg.model)) {
+      if (!cfg.baseUrl || !cfg.model) {
         testOut.textContent = t('settingsNeed');
         return;
       }

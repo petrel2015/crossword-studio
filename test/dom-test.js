@@ -312,15 +312,12 @@ async function main() {
     }
   });
 
-  // AI-style is blocked only with an incomplete CUSTOM provider — the
-  // built-in gateway counts as always configured
+  // AI-style is blocked while no custom endpoint is configured
   click($('btnSettings'));
-  ok(!!$('modalBody').querySelector('input[name="aiProvider"][value="builtin"]'), 'ai settings: provider radios shown');
-  ok(!$('modalBody').querySelector('input[name="aiProvider"][value="custom"]').checked, 'ai settings: builtin selected by default');
-  click($('modalBody').querySelector('input[name="aiProvider"][value="custom"]'));
+  ok(!$('modalBody').querySelector('input[name="aiProvider"]'), 'ai settings: no provider radios — custom endpoint only');
   click(Array.from($('modalBody').querySelectorAll('button')).find(b => b.textContent === 'Save'));
   await sleep(40);
-  ok($('aiStatus').textContent === 'AI clues: not configured', 'ai settings: incomplete custom → not configured');
+  ok($('aiStatus').textContent === 'AI clues: not configured', 'ai settings: empty config → not configured');
 
   click($('btnHome'));
   $('clueStyle').value = 'ai';
@@ -338,46 +335,54 @@ async function main() {
   ok($('clueStyle').selectedOptions[0].textContent.indexOf('AI 文章式') !== -1, 'article lang: selected style zh');
   click($('langEn'));
 
-  /* ---------- 18. built-in PromptGate provider ---------- */
-  // restore the built-in provider after the custom-guard scenario above
+  /* ---------- 18. custom OpenAI-compatible endpoint ---------- */
   click($('btnSettings'));
-  click($('modalBody').querySelector('input[name="aiProvider"][value="builtin"]'));
+  const aiFields = $('modalBody').querySelectorAll('input[type="text"]');
+  aiFields[0].value = 'https://api.local/v1';
+  aiFields[1].value = 'test-model';
+  $('modalBody').querySelector('input[type="password"]').value = 'sk-test';
   click(Array.from($('modalBody').querySelectorAll('button')).find(b => b.textContent === 'Save'));
   await sleep(40);
-  ok($('aiStatus').textContent === 'AI clues: built-in service', 'ai builtin: status line');
-  ok(JSON.parse(window.localStorage.getItem('cw-ai')).provider === 'builtin', 'ai builtin: provider persisted');
+  ok($('aiStatus').textContent === 'AI clues: test-model', 'ai custom: status line');
+  const savedAi = JSON.parse(window.localStorage.getItem('cw-ai'));
+  ok(savedAi.provider === 'custom' && savedAi.baseUrl === 'https://api.local/v1', 'ai custom: config persisted');
 
-  // request shape against the gateway contract
+  // request shape against the OpenAI-compatible contract
   window.__fetchCalls.length = 0;
   window.__fetchImpl = () => Promise.resolve({
     ok: true,
     json: () => Promise.resolve({ choices: [{ message: { role: 'assistant', content: '{"clues":{"BANANA":"stub banana clue","MELON":"stub melon clue"}}' } }] })
   });
   const clueMap = await window.CW.AI.fillClues([{ answer: 'BANANA' }, { answer: 'MELON' }], 'medium');
-  ok(clueMap.BANANA === 'stub banana clue', 'ai builtin: fillClues returns stubbed clue');
-  ok(window.__fetchCalls.length === 1, 'ai builtin: one request for two words');
-  const gw = window.__fetchCalls[0];
-  const wordsIn = c => c.split('\nWORDS:\n').pop().split('\n').length;
-  ok(gw.url === 'https://api.fluffyeti.com:61234/v1/chat/completions', 'ai builtin: gateway URL');
-  ok(/^Bearer pk_crossword_/.test(gw.opts.headers.Authorization), 'ai builtin: bearer caller id');
-  ok(gw.body.model === 'crossword-assistant', 'ai builtin: model alias');
-  ok(gw.body.messages.length === 1 && gw.body.messages[0].role === 'user', 'ai builtin: single user message, no system role');
-  ok(!('temperature' in gw.body) && !('response_format' in gw.body), 'ai builtin: strict body — extra fields omitted');
-  const charCount = gw.body.messages.reduce((n, msg) => n + msg.content.length, 0);
-  ok(charCount <= 2000, 'ai builtin: within the 2000-char input cap (' + charCount + ')');
+  ok(clueMap.BANANA === 'stub banana clue', 'ai custom: fillClues returns stubbed clue');
+  ok(window.__fetchCalls.length === 1, 'ai custom: one request for two words');
+  const req = window.__fetchCalls[0];
+  ok(req.url === 'https://api.local/v1/chat/completions', 'ai custom: endpoint URL');
+  ok(req.opts.headers.Authorization === 'Bearer sk-test', 'ai custom: bearer API key');
+  ok(req.body.model === 'test-model', 'ai custom: model sent');
+  ok(req.body.messages.length === 1 && req.body.messages[0].role === 'user', 'ai custom: single user message, no system role');
+  ok(req.body.temperature === 0.8 && req.body.response_format && req.body.response_format.type === 'json_object', 'ai custom: JSON-mode body fields');
 
-  // batching: 8 words → 2 batches of ≤ 6 (gateway caps output at 200 tokens)
+  // batching: 8 words fit in a single request (custom profile batch = 20)
   window.__fetchCalls.length = 0;
   const eight = ['ALPHA', 'BRAVO', 'CHARLIE', 'DELTA', 'ECHO', 'FOXTROT', 'GOLF', 'HOTEL'].map(w => ({ answer: w }));
   await window.CW.AI.fillClues(eight, 'easy');
-  ok(window.__fetchCalls.length === 2, 'ai builtin: 8 words split into 2 batches');
-  ok(window.__fetchCalls.every(c => wordsIn(c.body.messages[0].content) <= 6), 'ai builtin: ≤ 6 words per request');
+  ok(window.__fetchCalls.length === 1, 'ai custom: 8 words in a single batch');
 
-  // network failure (undeployed domain) → the "check configuration" message
+  // network failure (undeployed domain) → the reachability/CORS message
   window.__fetchImpl = () => Promise.reject(new TypeError('Failed to fetch'));
   let netErr = null;
   await window.CW.AI.fillClues([{ answer: 'APPLE' }], 'easy').catch(e => { netErr = e; });
-  ok(/check the configuration/.test(window.CW.AI.friendlyError(netErr)), 'ai builtin: network failure message');
+  ok(/CORS/.test(window.CW.AI.friendlyError(netErr)), 'ai custom: network failure message');
+
+  // auth failure (401) → the "check configuration" message
+  window.__fetchImpl = () => Promise.resolve({
+    ok: false, status: 401, headers: { get: () => null },
+    text: () => Promise.resolve(JSON.stringify({ error: { message: 'bad key' } }))
+  });
+  let authErr = null;
+  await window.CW.AI.fillClues([{ answer: 'APPLE' }], 'easy').catch(e => { authErr = e; });
+  ok(/check the configuration/.test(window.CW.AI.friendlyError(authErr)), 'ai custom: auth failure message');
 
   // daily circuit breaker
   window.__fetchImpl = () => Promise.resolve({
@@ -386,24 +391,23 @@ async function main() {
   });
   let dailyErr = null;
   await window.CW.AI.fillClues([{ answer: 'APPLE' }], 'easy').catch(e => { dailyErr = e; });
-  ok(/tomorrow/.test(window.CW.AI.friendlyError(dailyErr)), 'ai builtin: daily quota message');
+  ok(/tomorrow/.test(window.CW.AI.friendlyError(dailyErr)), 'ai custom: daily quota message');
 
   // remaining error kinds map without a round trip
-  ok(/minute/.test(window.CW.AI.friendlyError({ kind: 'rate' })), 'ai builtin: rate-limit message');
-  ok(/later/.test(window.CW.AI.friendlyError({ kind: 'upstream' })), 'ai builtin: upstream message');
-  ok(/CORS/.test(window.CW.AI.friendlyError({ kind: 'unreachable' })), 'ai custom: CORS message for custom endpoints');
-  ok(/input_too_long/.test(window.CW.AI.friendlyError({ kind: 'badrequest', detail: 'input_too_long' })), 'ai builtin: bad-request message');
-  ok(/unreadable/.test(window.CW.AI.friendlyError({ kind: 'badresponse' })), 'ai builtin: unreadable-response message');
-  ok(/in time/.test(window.CW.AI.friendlyError({ kind: 'timeout' })), 'ai builtin: timeout message');
-  ok(window.CW.AI.friendlyError(new Error('boom')) === 'boom', 'ai builtin: unknown errors keep their message');
+  ok(/minute/.test(window.CW.AI.friendlyError({ kind: 'rate' })), 'ai error: rate-limit message');
+  ok(/later/.test(window.CW.AI.friendlyError({ kind: 'upstream' })), 'ai error: upstream message');
+  ok(/input_too_long/.test(window.CW.AI.friendlyError({ kind: 'badrequest', detail: 'input_too_long' })), 'ai error: bad-request message');
+  ok(/unreadable/.test(window.CW.AI.friendlyError({ kind: 'badresponse' })), 'ai error: unreadable-response message');
+  ok(/in time/.test(window.CW.AI.friendlyError({ kind: 'timeout' })), 'ai error: timeout message');
+  ok(window.CW.AI.friendlyError(new Error('boom')) === 'boom', 'ai error: unknown errors keep their message');
 
-  // tolerant JSON parsing (gateway ignores response_format)
+  // tolerant JSON parsing (not every endpoint honours response_format)
   window.__fetchImpl = () => Promise.resolve({
     ok: true,
     json: () => Promise.resolve({ choices: [{ message: { role: 'assistant', content: 'Sure — here you go:\n```json\n{"clues":{"APPLE":"fenced clue"}}\n```\nEnjoy!' } }] })
   });
   const fencedMap = await window.CW.AI.fillClues([{ answer: 'APPLE' }], 'easy');
-  ok(fencedMap.APPLE === 'fenced clue', 'ai builtin: fenced JSON parsed');
+  ok(fencedMap.APPLE === 'fenced clue', 'ai custom: fenced JSON parsed');
 
   // UI happy path: sample + AI checkbox → stubbed clues land in the puzzle
   const until = async (fn, ms) => {
@@ -424,15 +428,15 @@ async function main() {
   const stubbedClues = Array.from(document.querySelectorAll('.clue .ctext')).map(e => e.textContent);
   ok(stubbedClues.includes('stub banana clue') && stubbedClues.includes('stub plum clue'), 'ai ui: stubbed clue rendered');
 
-  // settings: Test connection reports an unreachable gateway
+  // settings: Test connection reports an unreachable endpoint
   window.__fetchImpl = () => Promise.reject(new TypeError('Failed to fetch'));
   click($('btnSettings'));
   click(Array.from($('modalBody').querySelectorAll('button')).find(b => b.textContent === 'Test connection'));
-  ok(await until(() => /check the configuration/.test(document.querySelector('.ai-test-out').textContent), 10000),
+  ok(await until(() => /CORS/.test(document.querySelector('.ai-test-out').textContent), 10000),
     'ai settings: test connection failure message');
   click(document.querySelector('.modal-x'));
 
-  // auto style falls back to offline cloze when the gateway is unreachable
+  // auto style falls back to offline cloze when the endpoint is unreachable
   click($('btnHome'));
   click($('modeArticle'));
   click($('btnCandNone'));

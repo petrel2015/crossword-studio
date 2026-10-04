@@ -1,21 +1,9 @@
 /* =====================================================================
    Crossword Studio — AI clue writer
-   Two providers, resolved by AI.getConfig():
-
-   - builtin  the PromptGate gateway (default, works out of the box;
-              configuration lives in js/promptgate.js). OpenAI-compatible
-              and non-streaming, with hard server-side limits the client
-              must respect: ALL message content ≤ 2000 chars per request,
-              ≤ 200 output tokens, 20 requests/min/IP, daily circuit
-              breaker, system role stripped (instructions go in the user
-              message), and every extra body field ignored.
-   - custom   any user-configured OpenAI-compatible /chat/completions
-              endpoint (Base URL + model + key, kept in localStorage).
-
-   Both providers share one code path; the profile tunes batch size,
-   input budget and pacing. Failed requests are never auto-retried —
-   the gateway charges quota on every attempt, so failures surface to
-   the user via AI.friendlyError() instead.
+   One provider: any user-configured OpenAI-compatible /chat/completions
+   endpoint (Base URL + model + key, kept in localStorage). Failed
+   requests are never auto-retried — failures surface to the user via
+   AI.friendlyError() instead.
    ===================================================================== */
 (function (global) {
   'use strict';
@@ -23,18 +11,9 @@
   var CW = global.CW = global.CW || {};
   var AI = {};
 
-  /* ---------- provider profiles ---------- */
+  /* ---------- provider profile ---------- */
 
-  var BUILTIN_PROFILE = {
-    provider: 'builtin',
-    batchWords: 6,        /* 200-token output cap ÷ ~30 tokens per clue */
-    maxInputChars: 2000,  /* gateway counts every message's content */
-    inputMargin: 100,     /* stay under the hard cap */
-    minGapMs: 3200,       /* sequential batches stay under 20 req/min */
-    strictBody: true      /* gateway only reads `messages`: send nothing else */
-  };
-
-  var CUSTOM_PROFILE = {
+  var PROFILE = {
     provider: 'custom',
     batchWords: 20,
     maxInputChars: 14000,
@@ -49,31 +28,23 @@
     hard: 'clever clues with misdirection and puns'
   };
 
-  /* shape: {provider, baseUrl, model, apiKey} — legacy saves without a
-     provider but with a baseUrl are treated as custom so existing setups
-     keep working; everything else falls back to the builtin gateway. */
+  /* shape: {provider, baseUrl, model, apiKey} — legacy saves are all
+     treated as custom; anything without a baseUrl resolves to an empty
+     (unconfigured) profile. */
   AI.resolveConfig = function (shape) {
     shape = shape || {};
-    if (shape.provider === 'custom' || (!shape.provider && shape.baseUrl)) {
-      var p = Object.assign({}, CUSTOM_PROFILE);
-      p.baseUrl = shape.baseUrl || '';
-      p.model = shape.model || '';
-      p.apiKey = shape.apiKey || '';
-      return p;
-    }
-    var pg = CW.PromptGate || {};
-    var b = Object.assign({}, BUILTIN_PROFILE);
-    b.baseUrl = pg.BASE_URL || '';
-    b.apiKey = pg.API_KEY || '';
-    b.model = pg.MODEL || 'crossword-assistant';
-    return b;
+    var p = Object.assign({}, PROFILE);
+    p.baseUrl = shape.baseUrl || '';
+    p.model = shape.model || '';
+    p.apiKey = shape.apiKey || '';
+    return p;
   };
 
   AI.getConfig = function () { return AI.resolveConfig(CW.Store.loadAiConfig()); };
   AI.saveConfig = function (cfg) { CW.Store.saveAiConfig(cfg); };
   AI.isConfigured = function () {
     var c = AI.getConfig();
-    return c.provider === 'builtin' ? true : !!(c.baseUrl && c.model);
+    return !!(c.baseUrl && c.model);
   };
 
   /* words: [{answer, clue}] — fills only entries with empty clues.
@@ -111,10 +82,9 @@
     });
   };
 
-  /* Connectivity check for the settings dialog — one real request
-     (the gateway counts it against quota, hence user-triggered only).
-     Shorter timeout than a clue request: a healthy gateway answers a
-     trivial prompt well within 20 seconds. */
+/* Connectivity check for the settings dialog — one real request.
+   Shorter timeout than a clue request: a healthy endpoint answers a
+   trivial prompt well within 20 seconds. */
   AI.ping = function (cfg) {
     return request(cfg || AI.getConfig(), 'Reply with the single word "pong".', 20000)
       .then(function () { return true; });
@@ -211,14 +181,15 @@
 
   /* ---------- transport ---------- */
 
-  var lastCallAt = 0; /* keeps sequential builtin batches under the IP rate limit */
+  var lastCallAt = 0; /* sequential batches honour the profile's minGapMs */
 
   function request(cfg, userContent, timeoutMs) {
     if (!cfg.baseUrl) {
       return Promise.reject(errWith('unconfigured', 'AI is not configured — add an endpoint and model in AI Settings'));
     }
-    /* the gateway's upstream may take up to 120 s, so default the abort at
-       125 s; callers with trivial prompts (ping) pass a shorter budget */
+    /* slow upstreams (local models) can take a while, so default the
+       abort at 125 s; callers with trivial prompts (ping) pass a shorter
+       budget */
     timeoutMs = timeoutMs || 125000;
     var ctrl = typeof AbortController !== 'undefined' ? new AbortController() : null;
     var timer = ctrl ? setTimeout(function () { ctrl.abort(); }, timeoutMs) : null;
@@ -260,8 +231,7 @@
          TypeErrors and DOMExceptions can arrive from another realm, where
          instanceof would miss them) */
       if (err && err.name === 'TypeError') {
-        throw errWith(cfg.provider === 'builtin' ? 'unavailable' : 'unreachable',
-          'Could not reach the AI endpoint');
+        throw errWith('unreachable', 'Could not reach the AI endpoint');
       }
       if (err && err.name === 'AbortError') {
         throw errWith('timeout', 'AI request timed out');
@@ -284,8 +254,8 @@
     });
   }
 
-  /* The gateway does not honour response_format, so tolerate prose and
-     markdown fences around the JSON payload. */
+  /* Tolerate prose and markdown fences around the JSON payload — not all
+     endpoints honour response_format. */
   function extractJSON(text) {
     var s = String(text || '').trim();
     var fenced = s.match(/```(?:json)?\s*([\s\S]*?)```/i);
